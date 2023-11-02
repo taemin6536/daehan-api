@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.dashboard.DashboardMapper">
+    <select id="getEssRunData" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardEssRunDataRes"
+        parameterType="map">
+        /* DashboardMapper.getEssRunData */
+        SELECT
+            IF(
+                IFNULL(SUM(IF(V_TIME = DATE_FORMAT(NOW(), '%Y%m%d'), IFNULL(D_PERIOD_CHARGE_KWH, 0), 0))
+                                  / ((#{bmsCapa} * ((#{maxSoc} - #{minSoc}) / 100)) * 1 ) * 100, 0) > 100, 100,
+                IFNULL(SUM(IF(V_TIME = DATE_FORMAT(NOW(), '%Y%m%d'), IFNULL(D_PERIOD_CHARGE_KWH, 0), 0))
+                                  / ((#{bmsCapa} * ((#{maxSoc} - #{minSoc}) / 100)) * 1 ) * 100, 0)
+            ) AS todayChargeRate
+            , IFNULL(SUM(IF(V_TIME = DATE_FORMAT(NOW(), '%Y%m%d'), IFNULL(D_PERIOD_DISCHA_KWH, 0), 0))
+                              / ((#{bmsCapa} * ((#{maxSoc} - #{minSoc}) / 100)) * 1 ) * 100, 0) AS todayDischargeRate
+
+            , IF(
+                IFNULL(SUM(IF(V_TIME = DATE_FORMAT(DATE_ADD(NOW(), interval -1 day), '%Y%m%d'), IFNULL(D_PERIOD_CHARGE_KWH, 0), 0))
+                                  / ((#{bmsCapa} * ((#{maxSoc} - #{minSoc}) / 100)) * 1 ) * 100, 0) > 100, 100,
+                IFNULL(SUM(IF(V_TIME = DATE_FORMAT(DATE_ADD(NOW(), interval -1 day), '%Y%m%d'), IFNULL(D_PERIOD_CHARGE_KWH, 0), 0))
+                                / ((#{bmsCapa} * ((#{maxSoc} - #{minSoc}) / 100)) * 1 ) * 100, 0)
+            ) AS yesterdayChargeRate
+            , IFNULL(SUM(IF(V_TIME = DATE_FORMAT(DATE_ADD(NOW(), interval -1 day), '%Y%m%d'), IFNULL(D_PERIOD_DISCHA_KWH, 0), 0))
+                                / ((#{bmsCapa} * ((#{maxSoc} - #{minSoc}) / 100)) * 1 ) * 100, 0) AS yesterdayDischargeRate
+        FROM NRT_PCS_DAILY_STAT
+        WHERE V_TIME BETWEEN DATE_FORMAT(DATE_ADD(now(), interval -1 day), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+    </select>
+
+    <select id="getBmsData" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardEssRunDataDto">
+        /* DashboardMapper.getBmsData */
+        SELECT maxSoc, minSoc, bmsCapa
+        FROM (
+             SELECT SUM(IF(V_KEY = "dodMax", V_VALUE, NULL)) AS maxSoc
+                  , SUM(IF(V_KEY = "dodMin", V_VALUE, NULL)) AS minSoc
+                  , IF(V_SITE_ID IS NOT NULL, V_SITE_ID, NULL) AS siteId
+             FROM NST_PMS_SETTING
+         ) AS P
+         LEFT JOIN (
+            SELECT V_SITE_ID
+                 , SUM(D.D_PCS_CAPA) AS pcsCapa, SUM(D.D_PVI_CAPA) AS pviCapa, SUM(D.D_BMS_CAPA) AS bmsCapa
+            FROM NST_DEVICE_INFO AS D
+            GROUP BY V_SITE_ID
+        ) AS D
+        ON P.siteId = D.V_SITE_ID
+    </select>
+
+    <select id="getPmsSettingData" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardPmsSettingDataRes">
+        /* DashboardMapper.getPmsSettingData */
+        SELECT maxSoc, minSoc, pcsCapa, pviCapa, bmsCapa, pvFollowRate, pviCnt
+        FROM (
+             SELECT SUM(IF(V_KEY = "dodMax", V_VALUE, NULL)) AS maxSoc
+                  , SUM(IF(V_KEY = "dodMin", V_VALUE, NULL)) AS minSoc
+                  , SUM(IF(V_KEY = "pvFollowRate", V_VALUE, NULL)) AS pvFollowRate
+                  , IF(V_SITE_ID IS NOT NULL, V_SITE_ID, NULL) AS siteId
+             FROM NST_PMS_SETTING
+         ) AS P
+         LEFT JOIN (
+            SELECT V_SITE_ID
+                 , SUM(D.D_PCS_CAPA) AS pcsCapa, SUM(D.D_PVI_CAPA) AS pviCapa
+                 , SUM(D.D_BMS_CAPA) AS bmsCapa
+                 , SUM(IF(V_GR_ID = '311', 1, 0)) AS pviCnt
+            FROM NST_DEVICE_INFO AS D
+            GROUP BY V_SITE_ID
+        ) AS D
+        ON P.siteId = D.V_SITE_ID
+    </select>
+
+    <select id="getTodayEventData" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardTodayEventDataRes"
+        parameterType="map">
+        /* DashboardMapper.getTodayEventData */
+        <include refid="pagingMapper.prePaging" />
+        SELECT E.V_START_TIME AS startTime
+             , D.V_DEVICE_NM AS deviceNm
+             , D.V_DEVICE_ID AS deviceId
+             , E.V_EVENT_NM AS eventNm
+             , E.V_EVENT_STATUS_CD AS eventStatusCd
+             , CD2.V_CD_NM AS eventStatusNm
+             , E.V_EVENT_LVL AS eventLvl
+             , CD.V_CD_DESC AS eventLvlNm
+        FROM NHT_EVENT E
+        LEFT OUTER JOIN NST_DEVICE_INFO D
+        ON D.V_SITE_ID = E.V_SITE_ID
+        AND D.V_DEVICE_ID = E.V_DEVICE_ID
+        LEFT OUTER JOIN NST_CD_DETAIL CD
+        ON CD.V_MASTER_CD = 'SM010'
+        AND CD.V_DETAIL_CD = E.V_EVENT_LVL
+        LEFT OUTER JOIN NST_CD_DETAIL CD2
+        ON CD2.V_MASTER_CD = 'SM049'
+        AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
+        WHERE E.V_EVENT_STATUS_CD != 'ES003'
+        AND LEFT(E.V_START_TIME, 8) >= DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -7 DAY), '%Y%m%d')
+        AND (V_END_TIME IS NULL OR V_END_TIME = '')
+        AND (E.V_DEVICE_ID, E.V_START_TIME, E.V_EVENT_NM) NOT IN (
+            SELECT V_DEVICE_ID, V_START_TIME, V_EVENT_NM
+            FROM NHT_EVENT
+            WHERE V_END_TIME IS NOT NULL
+            AND V_END_TIME != ''
+            AND V_EVENT_STATUS_CD = 'ES003'
+        )
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getTodayEventDataCnt" resultType="int">
+        /* DashboardMapper.getTodayEventDataCnt */
+        SELECT COUNT(*)
+        FROM NHT_EVENT E
+        LEFT OUTER JOIN NST_DEVICE_INFO D
+        ON D.V_SITE_ID = E.V_SITE_ID
+        AND D.V_DEVICE_ID = E.V_DEVICE_ID
+        LEFT OUTER JOIN NST_CD_DETAIL CD
+        ON CD.V_MASTER_CD = 'SM010'
+        AND CD.V_DETAIL_CD = E.V_EVENT_LVL
+        LEFT OUTER JOIN NST_CD_DETAIL CD2
+        ON CD2.V_MASTER_CD = 'SM049'
+        AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
+        WHERE E.V_EVENT_STATUS_CD !='ES003'
+        AND LEFT(E.V_START_TIME, 8) >= DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -7 DAY), '%Y%m%d')
+        AND (V_END_TIME IS NULL OR V_END_TIME = '')
+        AND (E.V_DEVICE_ID, E.V_START_TIME, E.V_EVENT_NM) NOT IN (
+            SELECT V_DEVICE_ID, V_START_TIME, V_EVENT_NM
+            FROM NHT_EVENT
+            WHERE V_END_TIME IS NOT NULL
+            AND V_END_TIME != ''
+            AND V_EVENT_STATUS_CD = 'ES003'
+        )
+    </select>
+
+    <select id="getSiteInfo" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardWeatherDataRes">
+        /* DashboardMapper.getSiteInfo */
+        SELECT V_GPS_X AS gpsX, V_GPS_Y AS gpsY
+        FROM NST_SITE_INFO
+        WHERE V_SITE_ID = (
+            SELECT V_SITE_ID
+            FROM NST_PMS_SETTING
+            LIMIT 1
+        )
+    </select>
+
+    <select id="getWeatherInfo" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardWeatherDataRes">
+        /* DashboardMapper.getWeatherInfo */
+        SELECT IFNULL(D.V_HAN_DESCRIPTION, W.V_DESCRIPTION)  AS weatherDesc, V_ICON AS icon
+            , D_TEMP AS temp, D_HUMIDITY AS humidity, D_WIND_SPEED AS windSpeed, V_DIRE_HAN_DESC AS windDirection
+        FROM NST_GLOBAL_WEATHER AS W
+        LEFT JOIN NST_WEATHER_WIND_DIRECTION AS WD
+        ON W.V_WIND_DIRE = WD.V_CARDINAL_DIRE
+        LEFT JOIN NST_GLOBAL_WEATHER_DESC D
+        ON W.V_ID = D.V_ID
+        WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m%d%H')
+    </select>
+
+    <select id="getOperationPcsData" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardOperationDataRes">
+        /* DashboardMapper.getOperationPcsData */
+        SELECT *
+        FROM (
+            SELECT SUM(D_PERIOD_CHARGE_KWH) AS monlyChargeKwh
+                , SUM(D_PERIOD_DISCHA_KWH) AS monlyDischaKwh
+            FROM NRT_PCS_MONLY_STAT
+            WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m')
+        ) AS PM, (
+            SELECT SUM(D_PERIOD_CHARGE_KWH) AS dailyChargeKwh
+                , SUM(D_PERIOD_DISCHA_KWH) AS dailyDischaKwh
+            FROM NRT_PCS_DAILY_STAT
+            WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m%d')
+        ) AS PD
+    </select>
+
+    <select id="getOperationPviData" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardOperationDataRes">
+        /* DashboardMapper.getOperationPviData */
+        SELECT *
+        FROM (
+            SELECT SUM(D_PERIOD_GEN_KWH) AS monlyGenKwh
+            FROM NRT_PVI_MONLY_STAT
+            WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m')
+        ) AS PM, (
+            SELECT SUM(D_PERIOD_GEN_KWH) AS dailyGenKwh
+            FROM NRT_PVI_DAILY_STAT
+            WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m%d')
+        ) AS PD
+    </select>
+
+    <select id="getSiteDetailInfo" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardSiteInfoRes">
+        /* DashboardMapper.getSiteDetailInfo */
+        SELECT V_SITE_ID AS siteId, V_SITE_NM AS siteNm
+            , V_MNGER_NM AS managerNm, V_ADDR AS address, V_PHONE_NO AS phoneNo
+        FROM NST_SITE_INFO
+        WHERE V_SITE_ID = (
+            SELECT V_SITE_ID
+            FROM NST_SYSTEM_SETTING
+            WHERE V_KEY = 'useLoginFailCntYN'
+        )
+    </select>
+
+    <select id="getOperationChart" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardOperationChartRes">
+        /* DashboardMapper.getOperationChart */
+        SELECT time, SUM(IFNULL(periodGenKwh, 0)) AS periodGenKwh
+            , SUM(IFNULL(periodChargeKwh, 0)) AS periodChargeKwh, SUM(IFNULL(periodDischaKwh, 0)) AS periodDischaKwh
+        FROM (
+                (
+                    SELECT V_TIME AS time, SUM(IFNULL(D_PERIOD_GEN_KWH, 0)) AS periodGenKwh, 0 AS periodChargeKwh, 0 AS periodDischaKwh
+                    FROM NRT_PVI_HOURLY_STAT
+                    WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                    GROUP BY V_TIME
+                )
+                UNION ALL
+                (
+                    SELECT V_TIME AS time, 0 AS periodGenKwh, SUM(IFNULL(D_PERIOD_CHARGE_KWH, 0)) AS periodChargeKwh, SUM(IFNULL(D_PERIOD_DISCHA_KWH, 0)) AS periodDischaKwh
+                    FROM NRT_PCS_HOURLY_STAT
+                    WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                    GROUP BY V_TIME
+                )
+        ) AS DATA
+        GROUP BY time
+    </select>
+</mapper>

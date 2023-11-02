@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.management.ManagementMapper">
+
+    <select id="getSystemSetting"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementUserSystemSettingRes">
+        SELECT
+            V_KEY AS keyNm, N_KEY_ORD AS keyOrd, V_VALUE AS value
+        FROM NST_SYSTEM_SETTING
+        WHERE V_KEY IN ('useAlarmTelegram', 'useAlarmSMS', 'useAlarmEmail') AND V_VALUE = 'Y'
+        ORDER BY N_KEY_ORD
+    </select>
+
+    <select id="getConnectionHistoryTableCnt" resultType="int" parameterType="map" >
+        /* managementMapper.getConnectionHistoryTableCnt */
+        SELECT
+                COUNT(*)
+        FROM NHT_LOGIN L
+        WHERE <![CDATA[ (date_format(L.T_LOGIN_DT,'%Y%m%d%H') >= #{dateFrom}
+            AND date_format(L.T_LOGIN_DT,'%Y%m%d%H') < #{dateTo}) ]]>
+    </select>
+
+    <select id="getConnectionHistoryTable" resultType="com.nuri.mys.bems.domain.entity.management.ManagementConnectionHistoryRes"
+            parameterType="map">
+        /* managementMapper.getConnectionHistoryTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+                L.v_user_id AS userId,
+                U.v_user_nm AS userNm,
+                L.V_PERM_GR_ID AS permGrId,
+                L.V_PERM_GR_NM AS permGrNm,
+                L.V_DEVICE_GB AS deviceGb,
+                L.V_LOGIN_GB AS loginGb,
+                L.V_LOGIN_IP AS loginIp,
+                date_format(L.T_LOGIN_DT,'%Y-%m-%d %T')  AS loginDt
+        FROM NHT_LOGIN L
+        LEFT JOIN NST_USER_INFO AS U
+        ON L.V_USER_ID = U.V_USER_ID
+        WHERE <![CDATA[ (date_format(L.T_LOGIN_DT,'%Y%m%d%H') >= #{dateFrom}
+            AND date_format(L.T_LOGIN_DT,'%Y%m%d%H') < #{dateTo}) ]]>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getUserTableCnt" parameterType="map" resultType="int">
+        /* managementMapper.getUserTableCnt */
+        SELECT
+                COUNT(N_USER_SEQ)
+        FROM    NST_USER_INFO U
+        WHERE V_WEB_SHOW_YN = 'Y'
+    </select>
+
+    <select id="getUserTable" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementUserTableDataRes">
+        /* managementMapper.getUserTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+                N_USER_SEQ AS userSeq, V_USER_ID AS userId, V_PERM_GR_ID AS permGrId, V_PERM_GR_NM AS permGrNm, V_USER_NM AS userNm
+                , V_MOBILE_NO AS mobileNo, V_PHONE_NO AS phoneNo, V_EMAIL AS email, V_TELEGRAM_ID AS telegramId
+                , V_SMS_REC_YN AS smsRecYn, V_EMAIL_REC_YN AS emailRecYn, V_TELEGRAM_REC_YN AS telegramRecYn, V_EVENT_REC_YN AS eventRecYn
+                , TRIM(LEADING ',' FROM CONCAT(IF(V_SMS_REC_YN='Y', 'SMS', ''), IF(V_EMAIL_REC_YN='Y', ',Email', ''), IF(V_TELEGRAM_REC_YN='Y', ',Telegram', ''))) AS recClassification
+                , T_CREATE_DT AS createDt, T_UPDATE_DT AS updateDt
+        FROM    NST_USER_INFO
+        WHERE  V_WEB_SHOW_YN = 'Y'
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getHeaderUserDetail" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementUserDetailRes">
+        /* managementMapper.getHeaderUserDetail */
+        SELECT
+            N_USER_SEQ AS userSeq, V_USER_ID AS userId, V_PERM_GR_ID AS permGrId, V_PERM_GR_NM AS permGrNm, V_USER_NM AS userNm
+            , V_PHONE_NO AS phoneNo, V_MOBILE_NO AS mobileNo
+            , V_EMAIL AS email, V_TELEGRAM_ID AS telegramId
+            , V_SMS_REC_YN AS smsRecYn, V_EMAIL_REC_YN AS emailRecYn, V_TELEGRAM_REC_YN AS telegramRecYn, V_EVENT_REC_YN AS eventRecYn
+        FROM    NST_USER_INFO
+        WHERE  V_USER_ID = #{userId}
+    </select>
+
+    <select id="getUserDetail" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementUserDetailRes">
+        /* managementMapper.getUserDetail */
+        SELECT
+                N_USER_SEQ AS userSeq, V_USER_ID AS userId, V_PERM_GR_ID AS permGrId, V_PERM_GR_NM AS permGrNm, V_USER_NM AS userNm
+                , V_MOBILE_NO AS mobileNo, V_EMAIL AS email, V_TELEGRAM_ID AS telegramId
+                , V_SMS_REC_YN AS smsRecYn, V_EMAIL_REC_YN AS emailRecYn, V_TELEGRAM_REC_YN AS telegramRecYn, V_EVENT_REC_YN AS eventRecYn
+        FROM    NST_USER_INFO
+        WHERE  N_USER_SEQ = #{userSeq}
+    </select>
+
+    <select id="getUserDetailAndPass" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementUserDetailRes">
+        /* managementMapper.getUserDetailAndPass */
+        SELECT
+            N_USER_SEQ AS userSeq, V_USER_ID AS userId, V_PERM_GR_ID AS permGrId, V_PERM_GR_NM AS permGrNm, V_USER_NM AS userNm
+            , V_PHONE_NO AS mobileNo, V_EMAIL AS email, V_TELEGRAM_ID AS telegramId
+            , V_SMS_REC_YN AS smsRecYn, V_EMAIL_REC_YN AS emailRecYn, V_TELEGRAM_REC_YN AS telegramRecYn, V_EVENT_REC_YN AS eventRecYn
+            , V_PASS_NO AS passNo, V_PAST_PASS_NO_1 AS pastPassNo1, V_PAST_PASS_NO_2 AS pastPassNo2, V_PAST_PASS_NO_3 AS pastPassNo3
+        FROM    NST_USER_INFO
+        WHERE  N_USER_SEQ = #{userSeq}
+    </select>
+
+    <update id="updatePass" parameterType="map">
+        UPDATE  NST_USER_INFO
+        SET
+        <if test="pastPassNo1 != null and pastPassNo1 != ''">
+            V_PASS_NO = #{passNo} , V_PAST_PASS_NO_1 = #{pastPassNo1}
+            , V_PAST_PASS_NO_2 = #{pastPassNo2}, V_PAST_PASS_NO_3 = #{pastPassNo3}
+            , V_TEMP_PASS_YN = 'Y', N_LOGIN_FAIL_CNT = 0
+        </if>
+        WHERE N_USER_SEQ = #{userSeq}
+    </update>
+
+    <insert id="saveUser" parameterType="map">
+        /* managementMapper.saveUser */
+        INSERT INTO NST_USER_INFO
+        (
+            V_USER_ID, V_PASS_NO, V_USER_NM, V_PERM_GR_ID, V_PERM_GR_NM
+            , V_MOBILE_NO, V_PHONE_NO, V_EMAIL, V_TELEGRAM_ID
+            , V_SMS_REC_YN, V_EMAIL_REC_YN, V_TELEGRAM_REC_YN, V_EVENT_REC_YN
+            , T_PASS_UPDATE_DT, V_TEMP_PASS_YN, V_WEB_SHOW_YN, V_CREATE_ID, V_UPDATE_ID, T_CREATE_DT, T_UPDATE_DT
+        )
+        VALUES
+        (
+            #{objectUserId}, #{passNo}, #{objectUserNm}, #{permGrId}, #{permGrNm}
+            , #{mobileNo}, #{phoneNo}, #{email}, #{telegramId}
+            , #{smsRecYn}, #{emailRecYn}, #{telegramRecYn}, #{eventRecYn}
+            , NOW(), 'N', 'Y', #{userId}, #{userId}, NOW(), NOW()
+        )
+    </insert>
+
+    <select id="idCheck" parameterType="map" resultType="int">
+        /* managementMapper.idCheck */
+        SELECT
+                COUNT(V_USER_ID)
+        FROM    NST_USER_INFO
+        WHERE   V_USER_ID = #{objectUserId}
+    </select>
+
+    <update id="updateUser" parameterType="map">
+        /* managementMapper.updateUser */
+        UPDATE NST_USER_INFO
+        SET V_USER_NM = #{objectUserNm}
+            , V_PERM_GR_ID = #{permGrId}
+            , V_PERM_GR_NM = #{permGrNm}
+            , V_MOBILE_NO = #{mobileNo}
+            , V_PHONE_NO = #{phoneNo}
+            , V_EMAIL = #{email}
+            , V_TELEGRAM_ID = #{telegramId}
+            , V_SMS_REC_YN = #{smsRecYn}
+            , V_EMAIL_REC_YN = #{emailRecYn}
+            , V_TELEGRAM_REC_YN = #{telegramRecYn}
+            , V_EVENT_REC_YN = #{eventRecYn}
+            , V_UPDATE_ID = #{userId}
+            , T_UPDATE_DT = NOW()
+        WHERE N_USER_SEQ = #{userSeq}
+    </update>
+
+    <delete id="deleteUser" parameterType="map">
+        /* managementMapper.deleteUser */
+        DELETE
+        FROM   NST_USER_INFO
+        WHERE  N_USER_SEQ = #{userSeq}
+    </delete>
+
+    <update id="updateUserAndPass" parameterType="map">
+        /* userMapper.updateUserAndPass */
+        UPDATE  NST_USER_INFO
+        SET
+            V_USER_NM = #{userNm}
+            , V_PERM_GR_ID = #{permGrId}
+            , V_PERM_GR_NM = #{permGrNm}
+            , V_MOBILE_NO = #{mobileNo}
+            , V_PHONE_NO = #{phoneNo}
+            , V_EMAIL = #{email}
+            , V_TELEGRAM_ID = #{telegramId}
+            , V_SMS_REC_YN = #{smsRecYn}
+            , V_EMAIL_REC_YN = #{emailRecYn}
+            , V_TELEGRAM_REC_YN = #{telegramRecYn}
+            , V_EVENT_REC_YN = #{eventRecYn}
+            , V_UPDATE_ID = #{userId}
+            , T_UPDATE_DT = NOW()
+        <if test="pastPassNo1 != null and pastPassNo1 != ''">
+            , V_PASS_NO = #{passNo} , V_PAST_PASS_NO_1 = #{pastPassNo1}
+            , V_PAST_PASS_NO_2 = #{pastPassNo2}, V_PAST_PASS_NO_3 = #{pastPassNo3}
+            , T_PASS_UPDATE_DT = NOW(), V_TEMP_PASS_YN = #{tempPassYn}
+        </if>
+        WHERE N_USER_SEQ = #{userSeq}
+    </update>
+
+    <select id="getPmsSetting" resultType="com.nuri.mys.bems.domain.entity.management.ManagementSettingEssInfoRes">
+        /* managementMapper.getPmsSetting */
+        SELECT a.V_VALUE AS maxSoc, b.V_VALUE AS minSoc, c.V_VALUE AS chadiPowerLimit
+                , d.V_VALUE AS pvFollowRate, e.V_VALUE AS targetPower
+                , f.V_VALUE AS targetPowerRate
+                , CASE(g.V_VALUE)
+                    WHEN 2 THEN 'manual'
+                    WHEN 3 THEN 'schedule'
+                    WHEN 4 THEN 'auto'
+                END AS sysOPMode
+        FROM
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'dodMax') AS a,
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'dodMin') AS b,
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'outLimit') AS c,
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'pvFollowRate') AS d,
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'targetPower') AS e,
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'targetPowerRate') AS f,
+            (SELECT V_VALUE FROM NST_PMS_SETTING WHERE V_KEY = 'sysOPMode') AS g
+    </select>
+
+    <update id="savePmsSetting" parameterType="map">
+        /* managementMapper.savePmsSetting */
+        UPDATE NST_PMS_SETTING
+        SET V_VALUE =
+            CASE
+                WHEN V_KEY = "dodMax" THEN #{maxSoc}
+                WHEN V_KEY = "dodMin" THEN #{minSoc}
+                WHEN V_KEY = "outLimit" THEN #{chadiPowerLimit}
+                WHEN V_KEY = "pvFollowRate" THEN #{pvFollowRate}
+                WHEN V_KEY = "targetPower" THEN #{targetPower}
+                WHEN V_KEY = "targetPowerRate" THEN #{targetPowerRate}
+                WHEN V_KEY = "sysOPMode" THEN #{sysOPMode}
+                ELSE V_VALUE
+            END
+        <selectKey keyProperty="sysOPModeNm" resultType="String" order="AFTER">
+            SELECT LOWER(V_CD_NM)
+            FROM NST_CD_DETAIL
+            WHERE V_MASTER_CD = 'SM046'
+            AND V_DETAIL_CD = #{sysOPMode}
+        </selectKey>
+    </update>
+
+    <select id="getCapaData" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementCommonCapaInfoRes">
+        /* managementMapper.getCapaData */
+        SELECT
+            V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm
+            <if test="grId == 100">
+            , D_PCS_CAPA AS capa
+            </if>
+            <if test="grId == 200">
+            , D_BMS_CAPA AS capa
+            </if>
+            <if test="grId == 311">
+            , D_PVI_CAPA AS capa
+            </if>
+        FROM NST_DEVICE_INFO
+        WHERE V_GR_ID = #{grId}
+    </select>
+
+    <select id="getDeviceCapa" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementCommonCapaInfoRes">
+        /* managementMapper.getDeviceCapa */
+        SELECT V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm
+             , CASE V_GR_ID
+                   WHEN '100' THEN D_PCS_CAPA
+                   WHEN '200' THEN D_BMS_CAPA
+                   WHEN '311' THEN D_PVI_CAPA
+             END AS capa
+        FROM NST_DEVICE_INFO
+        <foreach collection="list" item="item" separator="," open="WHERE V_DEVICE_ID IN (" close=")">
+            #{item.deviceId}
+        </foreach>
+    </select>
+
+    <update id="saveCapa" parameterType="map">
+        /* managementMapper.saveCapa */
+        UPDATE NST_DEVICE_INFO
+        SET
+        <if test="grId == 100">
+            D_PCS_CAPA = #{capa}
+        </if>
+        <if test="grId == 200">
+            D_BMS_CAPA = #{capa}
+        </if>
+        <if test="grId == 311">
+            D_PVI_CAPA = #{capa}
+        </if>
+        WHERE V_DEVICE_ID = #{deviceId}
+    </update>
+
+    <select id="getPcsInfo" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementCommonCapaInfoRes">
+        /* managementMapper.getPcsInfo */
+        SELECT
+                '1000' AS deviceId, 'ALL' As deviceNm, AVG(IFNULL(D_PCS_CAPA, 0)) as capa
+        FROM  NST_DEVICE_INFO
+        WHERE V_GR_ID='100'
+
+        UNION ALL
+
+        SELECT
+                V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm, D_PCS_CAPA AS capa
+        FROM    NST_DEVICE_INFO
+        WHERE V_GR_ID='100'
+        <if test="deviceId != null and deviceId != '' and deviceId != '1000'">
+            AND V_DEVICE_ID = #{deviceId}
+        </if>
+    </select>
+
+    <select id="getPermType" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* managementMapper.getPermType */
+        SELECT
+                V_DETAIL_CD AS detailCd, V_CD_NM AS cdNm
+                , V_CD_ENG_NM AS cdEngNm, V_CD_HAN_NM AS cdHanNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM026'
+    </select>
+
+    <select id="getSeasonInfo" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* managementMapper.getSeasonInfo */
+        SELECT
+            '' AS detailCd, 'ALL' As cdNm, 'ALL' AS cdEngNm, '전체' AS cdHanNm
+        FROM DUAL
+
+        UNION ALL
+
+        SELECT
+            V_DETAIL_CD AS detailCd, V_CD_NM AS cdNm
+            , V_CD_ENG_NM AS cdEngNm, V_CD_HAN_NM AS cdHanNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM045'
+    </select>
+
+    <select id="getChargeInfo" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* managementMapper.getChargeInfo */
+        SELECT
+            '' AS detailCd, 'ALL' As cdNm, 'ALL' AS cdEngNm, '전체' AS cdHanNm
+        FROM DUAL
+
+        UNION ALL
+
+        SELECT
+            V_DETAIL_CD AS detailCd, V_CD_NM AS cdNm
+            , V_CD_ENG_NM AS cdEngNm, V_CD_HAN_NM AS cdHanNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM044'
+    </select>
+
+    <select id="getSiteInfo" resultType="com.nuri.mys.bems.domain.entity.management.ManagementSiteInfoRes">
+        /* managementMapper.getSiteInfo */
+        SELECT V_SITE_ID AS siteId, V_SITE_NM AS siteNm, V_MNGER_NM AS mngerNm, V_PHONE_NO AS phoneNo
+            , V_SMS_YN AS smsYn, V_COD AS cod, V_ADDR AS address, V_ADDR_REST AS addressDetail
+        FROM NST_SITE_INFO
+        WHERE V_SITE_ID = (
+            SELECT V_SITE_ID
+            FROM NST_SYSTEM_SETTING
+            LIMIT 1
+        )
+    </select>
+
+    <select id="getSiteDetailInfo" resultType="com.nuri.mys.bems.domain.entity.management.ManagementSiteInfoRes">
+        /* managementMapper.getSiteDetailInfo */
+        SELECT V_SITE_ID AS siteId, V_SITE_NM AS siteNm, V_MNGER_NM AS mngerNm
+            , V_ADDR AS address, V_ADDR_REST AS addressDetail, V_PHONE_NO AS phoneNo, V_COD AS cod
+            , V_SMS_YN AS smsYn
+        FROM NST_SITE_INFO
+        WHERE V_SITE_ID = #{siteId}
+    </select>
+
+    <select id="getSiteDeviceInfoCnt" resultType="int">
+        /* managementMapper.getSiteDeviceInfoCnt */
+        SELECT COUNT(*)
+        FROM (
+            SELECT
+                V_SITE_ID AS siteId, V_SITE_NM AS siteNm, V_GR_NM AS grNm
+                , V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm
+                , CASE V_GR_ID
+                        WHEN '100' THEN D_PCS_CAPA
+                        WHEN '200' THEN D_BMS_CAPA
+                        WHEN '311' THEN D_PVI_CAPA
+                END AS capa
+            FROM NST_DEVICE_INFO
+            WHERE V_SITE_ID = #{siteId}
+            <if test="grId != null and grId != ''">
+                AND V_GR_ID = #{grId}
+            </if>
+        ) AS data
+    </select>
+
+    <select id="getSiteDeviceInfo" resultType="com.nuri.mys.bems.domain.entity.management.ManagementSiteDeviceInfoRes">
+        /* managementMapper.getSiteDeviceInfo */
+        <include refid="pagingMapper.prePaging" />
+        SELECT V_SITE_ID AS siteId, V_SITE_NM AS siteNm, V_GR_NM AS grNm
+                , V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm
+                , CASE V_GR_ID
+                    WHEN '100' THEN D_PCS_CAPA
+                    WHEN '200' THEN D_BMS_CAPA
+                    WHEN '311' THEN D_PVI_CAPA
+                END AS capa
+        FROM NST_DEVICE_INFO
+        WHERE V_SITE_ID = #{siteId}
+        <if test="grId != null and grId != ''">
+            AND V_GR_ID = #{grId}
+        </if>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getSiteDeviceDetailInfo" resultType="com.nuri.mys.bems.domain.entity.management.ManagementSiteDeviceInfoRes">
+        /* managementMapper.getSiteDeviceDetailInfo */
+        SELECT V_SITE_ID AS siteId, V_SITE_NM AS siteNm, V_GR_NM AS grNm
+                , V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm
+                , CASE V_GR_ID
+                    WHEN '100' THEN D_PCS_CAPA
+                    WHEN '200' THEN D_BMS_CAPA
+                    WHEN '311' THEN D_PVI_CAPA
+                END AS capa
+        FROM NST_DEVICE_INFO
+        WHERE V_SITE_ID = #{siteId}
+        AND V_DEVICE_ID = #{deviceId}
+    </select>
+
+    <update id="updateSiteDetailInfo" parameterType="map">
+        /* managementMapper.updateSiteDetailInfo */
+        UPDATE NST_SITE_INFO
+        SET
+            V_MNGER_NM = #{mngerNm}
+            , V_PHONE_NO = #{phoneNo}
+            , V_SMS_YN = #{smsYn}
+            , V_COD = #{cod}
+            , V_ADDR = #{address}
+            , V_ADDR_REST = #{addressDetail}
+        WHERE V_SITE_ID = #{siteId}
+    </update>
+
+    <select id="getSchDataCnt" parameterType="map" resultType="int">
+        /* managementMapper.getSchDataCnt */
+        SELECT
+        COUNT(*)
+        FROM NST_CHADI_SCH_INFO SCH
+        LEFT JOIN NST_DEVICE_INFO DEVICE
+        ON SCH.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        LEFT JOIN NST_CD_DETAIL CD01
+        ON SCH.N_WEEK_CD = CD01.V_DETAIL_CD
+        LEFT JOIN NST_CD_DETAIL CD02
+        ON SCH.N_SEASON_CD = CD02.V_DETAIL_CD
+        LEFT JOIN NST_CD_DETAIL CD03
+        ON SCH.V_CHADI_STATUS = CD03.V_DETAIL_CD
+        WHERE CD01.V_MASTER_CD = 'SM047'
+        AND CD02.V_MASTER_CD = 'SM048'
+        AND CD03.V_MASTER_CD = 'SM044'
+        <if test="deviceId != null and deviceId != '' and deviceId != '1000'">
+            AND SCH.V_DEVICE_ID = #{deviceId}
+        </if>
+        <if test="chadiStatus != null and chadiStatus != ''">
+            AND V_CHADI_STATUS = #{chadiStatus}
+        </if>
+        <if test="seasonCd != null and seasonCd != ''">
+            AND N_SEASON_CD = #{seasonCd}
+        </if>
+        <if test="weekCd != null and weekCd != ''">
+            AND N_WEEK_CD = #{weekCd}
+        </if>
+    </select>
+
+    <select id="getSchTable" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementSchDataRes">
+        /* managementMapper.getSchTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+            N_SCH_SEQ AS schSeq, SCH.V_SITE_ID AS siteId, SCH.V_GR_ID AS grId
+            , SCH.V_DEVICE_ID AS deviceId, DEVICE.V_DEVICE_NM AS deviceNm
+            , CD01.V_CD_HAN_NM AS weekNm, CD02.V_CD_HAN_NM AS seasonNm
+            , CD03.V_CD_HAN_NM AS chadiStatusNm, D_CHADI_KW AS chadiKw
+            , CONCAT(V_START_HH,':',V_START_MI) as startTime
+            , CONCAT(V_END_HH,':',V_END_MI) as endTime
+        FROM NST_CHADI_SCH_INFO SCH
+        LEFT JOIN NST_DEVICE_INFO DEVICE
+        ON SCH.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        LEFT JOIN NST_CD_DETAIL CD01
+        ON SCH.N_WEEK_CD = CD01.V_DETAIL_CD
+        LEFT JOIN NST_CD_DETAIL CD02
+        ON SCH.N_SEASON_CD = CD02.V_DETAIL_CD
+        LEFT JOIN NST_CD_DETAIL CD03
+        ON SCH.V_CHADI_STATUS = CD03.V_DETAIL_CD
+        WHERE CD01.V_MASTER_CD = 'SM047'
+        AND CD02.V_MASTER_CD = 'SM048'
+        AND CD03.V_MASTER_CD = 'SM044'
+        <if test="deviceId != null and deviceId != '' and deviceId != '1000'">
+            AND SCH.V_DEVICE_ID = #{deviceId}
+        </if>
+        <if test="chadiStatus != null and chadiStatus != ''">
+            AND V_CHADI_STATUS = #{chadiStatus}
+        </if>
+        <if test="seasonCd != null and seasonCd != ''">
+            AND N_SEASON_CD = #{seasonCd}
+        </if>
+        <if test="weekCd != null and weekCd != ''">
+            AND N_WEEK_CD = #{weekCd}
+        </if>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getSchChartData" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ManagementSchDataRes">
+        /* managementMapper.getSchChartData */
+        SELECT
+            N_SCH_SEQ AS schSeq, SCH.V_SITE_ID AS siteId
+            , SCH.V_DEVICE_ID AS deviceId, DEVICE.V_DEVICE_NM AS deviceNm
+            , CD01.V_CD_HAN_NM AS weekNm, CD02.V_CD_HAN_NM AS seasonNm
+            , CD03.V_CD_NM AS chadiStatusNm, D_CHADI_KW AS chadiKw
+            , V_START_HH AS startHh, V_START_MI AS startMi, V_END_HH As endHh, V_END_MI AS endMi
+        FROM NST_CHADI_SCH_INFO AS SCH
+        LEFT JOIN NST_DEVICE_INFO DEVICE
+        ON SCH.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        LEFT JOIN NST_CD_DETAIL CD01
+        ON SCH.N_WEEK_CD = CD01.V_DETAIL_CD
+        LEFT JOIN NST_CD_DETAIL CD02
+        ON SCH.N_SEASON_CD = CD02.V_DETAIL_CD
+        LEFT JOIN NST_CD_DETAIL CD03
+        ON SCH.V_CHADI_STATUS = CD03.V_DETAIL_CD
+        WHERE CD01.V_MASTER_CD = 'SM047'
+        AND CD02.V_MASTER_CD = 'SM048'
+        AND CD03.V_MASTER_CD = 'SM044'
+        <if test="deviceId != null and deviceId != ''">
+            AND SCH.V_DEVICE_ID = #{deviceId}
+        </if>
+        <if test="seasonCd != null and seasonCd != ''">
+            AND N_SEASON_CD = #{seasonCd}
+        </if>
+        <if test="weekCd != null and weekCd != ''">
+            AND N_WEEK_CD = #{weekCd}
+        </if>
+        ORDER BY SCH.V_DEVICE_ID, V_START_HH, V_START_MI DESC
+    </select>
+
+    <insert id="saveSch" parameterType="map">
+        /* managementMapper.saveSch */
+        INSERT INTO NST_CHADI_SCH_INFO
+        (
+            V_SITE_ID, V_GR_ID, V_DEVICE_ID, N_SEASON_CD
+            , N_WEEK_CD, V_CHADI_STATUS, D_CHADI_KW
+            , V_START_HH, V_START_MI , V_END_HH, V_END_MI
+            , T_CREATE_DT, T_UPDATE_DT , V_CREATE_ID, V_UPDATE_ID
+        )
+        VALUES
+        <foreach collection="weekArr" item="weekCd" separator=",">
+        (
+            #{siteId}, '100', #{deviceId}, #{seasonCd}
+            , #{weekCd}, #{chadiStatus}, #{chadiKw}
+            , #{startHh}, #{startMi}, #{endHh}, #{endMi}
+            , NOW(), NOW(), #{userId}, #{userId}
+        )
+        </foreach>
+    </insert>
+
+    <delete id="deleteSch" parameterType="map">
+        /* managementMapper.deleteSch */
+        DELETE
+        FROM NST_CHADI_SCH_INFO
+        WHERE N_SCH_SEQ IN
+        <foreach item="seq" collection="schSeq"  open="(" separator="," close=")">
+            #{seq}
+        </foreach>
+    </delete>
+
+    <select id="getControlSch" parameterType="map" resultType="com.nuri.mys.bems.domain.entity.management.ManagementSchCommonDto">
+        /* managementMapper.getControlSch */
+        SELECT V_SITE_ID AS siteId, V_DEVICE_ID AS deviceId
+            , N_WEEK_CD AS weekCd, N_SEASON_CD AS seasonCd
+        FROM NST_CHADI_SCH_INFO
+        WHERE N_SCH_SEQ = #{schSeq[0]}
+    </select>
+
+    <select id="getHolidayData" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.HolidayRes">
+        /* managementMapper.getHolidayData */
+        SELECT time, holidayDesc AS holidDesc
+        FROM (
+            SELECT
+                CONCAT(#{year},
+                    RIGHT(REPLACE(IF(HOLIDAY IS NULL,
+                            (SELECT
+                                DATE_ADD(SOLA, INTERVAL - 1 DAY)
+                                FROM
+                                    NST_SOLATOLUNAR
+                                WHERE
+                                    LUNAR = CONCAT(#{year}, '-01-01')),
+                            HOLIDAY),
+                        '-',
+                        ''),
+                    4)) AS time,
+                holidayDesc
+            FROM
+                (SELECT
+                    IF(LASTHOLIDAY IS NOT NULL, (SELECT
+                                SOLA
+                            FROM
+                                NST_SOLATOLUNAR
+                            WHERE
+                                LUNAR = CONCAT(#{year}, '-', HOLIDAY)), HOLIDAY) AS HOLIDAY,
+                        holidayDesc
+                    FROM
+                        NST_HOLIDAY_INFO) AS A
+        ) AS A
+        WHERE A.TIME LIKE CONCAT(#{year}, #{month}, '%')
+    </select>
+
+    <select id="getClosedDayData" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.management.ClosedDayRes">
+        /* managementMapper.getClosedDayData */
+        SELECT V_SITE_ID siteId, V_TIME_DD time
+            , N_WEEK_CD weekCd
+        FROM NST_CHADI_HOLID_INFO AS CH
+        WHERE V_SITE_ID = #{siteId}
+        AND LEFT(V_TIME_DD, 6) = CONCAT(#{year}, #{month})
+        ORDER BY V_TIME_DD ASC
+    </select>
+
+    <select id="getYearHolidayCnt" parameterType="map"
+            resultType="int">
+        /* managementMapper.getYearHolidayCnt */
+        SELECT COUNT(*)
+        FROM NST_CHADI_HOLID_INFO
+        WHERE V_SITE_ID = #{siteId}
+        AND LEFT(V_TIME_DD, 4) = #{year}
+    </select>
+
+    <insert id="saveHolidayData" parameterType="map">
+        /* managementMapper.saveHolidayData */
+        INSERT INTO NST_CHADI_HOLID_INFO
+        (
+            V_SITE_ID, V_TIME_DD, V_DEVICE_ID
+            , V_HOLID_CD, N_WEEK_CD, V_GR_ID, V_USER_ID
+            , V_LEGAL_HOLID_YN, V_CREATE_ID, V_UPDATE_ID
+        )
+        VALUES
+        <foreach collection="holidayArr" item="day" separator=",">
+            (
+                #{siteId}, CONCAT(#{day}), #{deviceId}
+                , '1', DAYOFWEEK(#{day}), '100', #{userId}
+                , 'Y', #{userId}, #{userId}
+            )
+        </foreach>
+    </insert>
+
+    <insert id="saveClosedData" parameterType="map">
+        /* managementMapper.saveClosedData */
+        INSERT INTO NST_CHADI_HOLID_INFO
+        (
+            V_SITE_ID, V_TIME_DD, V_DEVICE_ID
+            , V_HOLID_CD, N_WEEK_CD, V_GR_ID, V_USER_ID
+            , V_LEGAL_HOLID_YN, V_CREATE_ID, V_UPDATE_ID
+        )
+        VALUES
+        <foreach collection="closedDayArr" item="day" separator=",">
+            (
+                #{siteId}, #{day}, #{deviceId}
+                , '0', DAYOFWEEK(#{day}), '100', #{userId}
+                , 'N', #{userId}, #{userId}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteHolidayData" parameterType="map">
+        /* managementMapper.deleteHolidayData */
+        DELETE
+        FROM NST_CHADI_HOLID_INFO
+        WHERE V_TIME_DD LIKE CONCAT(#{year},'%')
+        AND V_TIME_DD > #{today}
+    </delete>
+
+    <select id="getLegalHolidayData" resultType="String" parameterType="map">
+        /* managementMapper.getLegalHolidayData */
+        SELECT TIME
+        FROM (
+            SELECT
+                CONCAT(#{year},
+                        RIGHT(REPLACE(IF(HOLIDAY IS NULL,
+                                    (SELECT
+                                            DATE_ADD(SOLA, INTERVAL - 1 DAY)
+                                        FROM
+                                            NST_SOLATOLUNAR
+                                        WHERE
+                                            LUNAR = CONCAT(#{year}, '-01-01')),
+                                    HOLIDAY),
+                                '-',
+                                ''),
+                            4)) AS time
+            FROM
+                (SELECT
+                    IF(LASTHOLIDAY IS NOT NULL, (SELECT
+                                SOLA
+                            FROM
+                                NST_SOLATOLUNAR
+                            WHERE
+                                LUNAR = CONCAT(#{year}, '-', HOLIDAY)), HOLIDAY) AS HOLIDAY
+                FROM
+                    NST_HOLIDAY_INFO) AS A
+        ) AS A
+        WHERE TIME > #{today}
+        ORDER BY time
+    </select>
+
+    <delete id="deleteClosedData" parameterType="map">
+        /* managementMapper.deleteClosedData */
+        DELETE
+        FROM NST_CHADI_HOLID_INFO
+        WHERE V_TIME_DD = #{closedDay}
+    </delete>
+
+    <select id="getHolidayCd" parameterType="map" resultType="String">
+        /* managementMapper.getHolidayCd */
+            SELECT IF(V_LEGAL_HOLID_YN = 'Y', '1', '0')
+            FROM NST_CHADI_HOLID_INFO
+            WHERE V_TIME_DD = #{closedDay}
+    </select>
+</mapper>

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.control.ControlMapper">
+
+    <select id="getControlTableData" resultType="com.nuri.mys.bems.domain.entity.control.ControlTableDataRes"
+            parameterType="map">
+        /* ControlMapper.getControlTableData */
+        <include refid="pagingMapper.prePaging" />
+        SELECT V_TIME AS time, D.V_DEVICE_NM AS deviceNm, D.V_GR_NM AS grNm
+                , V_DESC AS description, H.V_USER_ID AS userId, U.V_USER_NM AS userNm
+                , V_PERM_GR_NM AS permGrNm, "Control" AS classification
+        FROM NHT_CONTR AS H
+        LEFT JOIN NST_DEVICE_INFO AS D
+        ON H.V_DEVICE_ID = D.V_DEVICE_ID
+        LEFT JOIN NST_USER_INFO AS U
+        ON H.V_USER_ID = U.V_USER_ID
+        WHERE
+            <![CDATA[
+                V_TIME >= #{dateFrom}
+                AND V_TIME < #{dateTo}
+            ]]>
+        <if test="grId != null and grId !=''">
+            AND H.V_GR_ID = #{grId}
+        </if>
+        <if test="deviceId != null and deviceId !=''">
+            AND H.V_DEVICE_ID = #{deviceId}
+        </if>
+        ORDER BY V_TIME DESC
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getControlSettingData" resultType="com.nuri.mys.bems.domain.entity.control.ControlTableDataRes"
+            parameterType="map">
+        /* ControlMapper.getControlSettingData */
+        <include refid="pagingMapper.prePaging" />
+        SELECT V_TIME AS time, V_DESC AS description, H.V_USER_ID AS userId, U.V_USER_NM AS userNm
+            , V_PERM_GR_NM AS permGrNm, "Setting" AS classification
+        FROM NHT_PMS_SETTING AS H
+        LEFT JOIN NST_USER_INFO AS U
+        ON H.V_USER_ID = U.V_USER_ID
+        WHERE
+        <![CDATA[
+                V_TIME >= #{dateFrom}
+                AND V_TIME < #{dateTo}
+            ]]>
+        ORDER BY V_TIME DESC
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getControlTableDataCnt" resultType="int"
+            parameterType="map">
+        /* ControlMapper.getControlTableDataCnt */
+        SELECT COUNT(*)
+        FROM
+        <if test="classificationCd == 'setting'">
+            NHT_PMS_SETTING AS H
+        </if>
+        <if test="classificationCd == 'control'">
+            NHT_CONTR AS H
+        </if>
+        WHERE
+        <![CDATA[
+            V_TIME >= #{dateFrom}
+            AND V_TIME < #{dateTo}
+        ]]>
+        <if test="classificationCd == 'control'">
+            <if test="grId != null and grId !=''">
+                AND H.V_GR_ID = #{grId}
+            </if>
+            <if test="deviceId != null and deviceId !=''">
+                AND H.V_DEVICE_ID = #{deviceId}
+            </if>
+        </if>
+    </select>
+
+    <select id="getSearchDevice" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* ControlMapper.getSearchDevice */
+        SELECT V_DETAIL_CD AS detailCd
+             , V_CD_NM AS cdNm
+             , V_CD_ENG_NM AS cdEngNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM400'
+          AND V_DETAIL_CD IN ('100', '200', '311')
+    </select>
+
+    <select id="getSearchDeviceNumber" resultType="com.nuri.mys.bems.domain.entity.control.ControlDeviceNumberRes">
+        /* ControlMapper.getSearchDeviceNumber */
+        SELECT cdNm, pcsDeviceId, D1.V_DEVICE_NM AS pcsDeviceNm
+             , bmsDeviceId, D2.V_DEVICE_NM AS bmsDeviceNm
+         FROM (
+             SELECT RIGHT(V_DEVICE_ID, 1) AS cdNm
+                     , CONCAT('100', LPAD(RIGHT(V_DEVICE_ID, 1), 4, 0)) AS pcsDeviceId
+                     , CONCAT('200', LPAD(RIGHT(V_DEVICE_ID, 1), 4, 0)) AS bmsDeviceId
+             FROM NST_DEVICE_INFO
+             WHERE V_GR_ID = '100'
+         ) AS DATA
+         LEFT JOIN NST_DEVICE_INFO AS D1
+           ON DATA.pcsDeviceId = D1.V_DEVICE_ID
+         LEFT JOIN NST_DEVICE_INFO AS D2
+           ON DATA.bmsDeviceId = D2.V_DEVICE_ID
+    </select>
+
+    <insert id="savePmsSetting" parameterType="map">
+        /* ControlMapper.savePmsSetting */
+        UPDATE NST_PMS_SETTING
+        SET V_VALUE = #{mode}
+        WHERE V_KEY = 'sysOPMode'
+    </insert>
+
+    <insert id="saveSettingHistory" parameterType="map">
+        /* ControlMapper.saveSettingHistory */
+        INSERT INTO NHT_PMS_SETTING
+        (
+            V_SITE_ID, V_TIME, V_DESC, V_USER_ID
+            , T_CREATE_DT, T_UPDATE_DT
+        ) VALUES (
+            #{siteId}, DATE_FORMAT(now(), '%Y%m%d%H%i%s'),
+                #{description}, #{userId}
+            , now(), now()
+        )
+        <selectKey keyProperty="seq" resultType="String" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <insert id="saveSettingMngHistory" parameterType="map">
+        /* ControlMapper.saveSettingMngHistory */
+        INSERT INTO NHT_PMS_SETTING
+        (
+            V_SITE_ID, V_TIME, V_DESC, V_USER_ID
+            , T_CREATE_DT, T_UPDATE_DT
+        ) VALUES (
+            #{siteId}, DATE_FORMAT(now(), '%Y%m%d%H%i%s'),
+            ${description}, #{userId}
+            , now(), now()
+        )
+        <selectKey keyProperty="seq" resultType="String" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <insert id="saveControlHistory" parameterType="map">
+        /* ControlMapper.saveControlHistory */
+        INSERT INTO NHT_CONTR
+        (
+            V_SITE_ID, V_DEVICE_ID, V_TIME, V_GR_ID, V_DESC
+            , V_USER_ID, T_CREATE_DT, T_UPDATE_DT
+        ) VALUES (
+            #{siteId}, #{command.devId}, DATE_FORMAT(now(), '%Y%m%d%H%i%s'), #{grId}, ${description}
+            , #{userId}, now(), now()
+        )
+        <selectKey keyProperty="command.seq" resultType="String" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <select id="getDeviceNm" parameterType='map' resultType="map">
+        /* ControlMapper.getDeviceNm */
+        SELECT V_GR_NM AS grNm, V_DEVICE_NM AS deviceNm
+        FROM NST_DEVICE_INFO
+        WHERE V_SITE_ID = #{siteId}
+        AND V_DEVICE_ID = #{command.devId}
+    </select>
+
+    <select id="getGrNm" parameterType='map' resultType="String">
+        /* ControlMapper.getGrNm */
+        SELECT V_CD_NM AS grNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM400'
+          AND V_DETAIL_CD = #{grId}
+    </select>
+
+    <select id="getPcsDeviceNm" parameterType='map' resultType="String">
+        /* ControlMapper.getPcsDeviceNm */
+        SELECT V_DEVICE_NM
+        FROM NST_DEVICE_INFO
+        WHERE V_SITE_ID = #{siteId}
+          AND V_DEVICE_ID = #{devId}
+    </select>
+
+    <select id="getStatusDrivingMode" resultType="com.nuri.mys.bems.domain.entity.control.ControlDrivingmodeRes">
+        /* ControlMapper.getStatusDrivingMode */
+        SELECT
+            CASE(V_VALUE)
+                WHEN 2 THEN 'Manual'
+                WHEN 3 THEN 'Schedule'
+                WHEN 4 THEN 'Auto'
+            ELSE 'NO MODE' END AS drivingMode
+        FROM NST_PMS_SETTING
+        WHERE V_CATEGORY = 'sysOPMode'
+    </select>
+
+    <select id="getWindDirection" parameterType="map" resultType="string">
+        SELECT V_DIRE_DESC
+        FROM NST_WEATHER_WIND_DIRECTION
+        WHERE D_WIND_DEG_MIN <![CDATA[<=]]> ${windDirectionMin}
+          AND D_WIND_DEG_MAX <![CDATA[>]]> ${windDirectionMax}
+    </select>
+
+    <select id="getDeviceCapa" parameterType ='map' resultType="_double">
+        /* ControlMapper.getDeviceCapa */
+        SELECT
+            CASE #{grId}
+                WHEN '100' THEN SUM(D_PCS_CAPA)
+                WHEN '200' THEN SUM(D_BMS_CAPA)
+                WHEN '311' THEN SUM(D_PVI_CAPA)
+                WHEN '700' THEN SUM(D_PVI_CAPA)
+                ELSE 0
+            END AS capa
+        FROM NST_DEVICE_INFO
+        <where>
+            <if test="devId != null and devId !=''">
+                AND V_DEVICE_ID = #{devId}
+            </if>
+        </where>
+    </select>
+</mapper>

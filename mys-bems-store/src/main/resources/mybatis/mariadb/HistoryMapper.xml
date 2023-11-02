@@ -1,0 +1,754 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.history.HistoryMapper">
+
+    <select id="getHistoryOperationTotSummary" resultType="com.nuri.mys.bems.domain.entity.history.HistoryOperationSummaryRes"
+            parameterType="map">
+        /* historyMapper.getHistoryOperationTotSummary */
+        SELECT
+            SUM(IFNULL(D_TOT_GEN_KWH,0)) AS totGenKwh
+            , SUM(IFNULL(D_TOT_CHARGE_KWH,0)) AS totChargeKwh
+            , SUM(IFNULL(D_TOT_DISCHA_KWH,0)) AS totDischaKwh
+        FROM NST_SITE_INFO AS SITE
+        LEFT JOIN (
+            SELECT V_SITE_ID, SUM(IFNULL(D_TOT_GEN_KWH,0)) AS D_TOT_GEN_KWH
+            FROM NRT_PVI_${periodTableName}_STAT
+            WHERE (V_SITE_ID, V_TIME) IN ((
+                SELECT V_SITE_ID, MAX(V_TIME)
+                FROM NRT_PVI_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+            ))
+        ) AS PVI
+        ON SITE.V_SITE_ID = PVI.V_SITE_ID
+        LEFT JOIN (
+            SELECT
+                V_SITE_ID, SUM(IFNULL(D_TOT_CHARGE_KWH,0)) AS D_TOT_CHARGE_KWH, SUM(IFNULL(D_TOT_DISCHA_KWH,0)) AS D_TOT_DISCHA_KWH
+            FROM NRT_PCS_${periodTableName}_STAT
+            WHERE (V_SITE_ID, V_TIME) IN ((
+                SELECT V_SITE_ID, MAX(V_TIME)
+                FROM NRT_PCS_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+            ))
+        ) AS PCS
+        ON SITE.V_SITE_ID = PCS.V_SITE_ID
+    </select>
+
+    <select id="getHistoryOperationSummary" resultType="com.nuri.mys.bems.domain.entity.history.HistoryOperationSummaryRes"
+            parameterType="map">
+        /* historyMapper.getHistoryOperationSummary */
+        SELECT
+                SUM(IFNULL(D_PVI_PERIOD_GEN_KWH,0)) AS periodGenKwh
+                , SUM(IFNULL(D_PERIOD_CHARGE_KWH,0)) AS periodChargeKwh
+                , SUM(IFNULL(D_PERIOD_DISCHA_KWH,0)) AS periodDischaKwh
+        FROM NST_SITE_INFO AS SITE
+        LEFT JOIN (
+            SELECT V_SITE_ID, SUM(IFNULL(D_PVI_PERIOD_GEN_KWH,0)) AS D_PVI_PERIOD_GEN_KWH
+            FROM (
+                SELECT V_SITE_ID, SUM(IFNULL(D_PERIOD_GEN_KWH,0)) AS D_PVI_PERIOD_GEN_KWH
+                FROM NRT_PVI_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                GROUP BY V_SITE_ID, V_DEVICE_ID
+            ) AS A
+        ) AS PVI
+        ON SITE.V_SITE_ID = PVI.V_SITE_ID
+        LEFT JOIN (
+            SELECT
+                V_SITE_ID, SUM(IFNULL(D_PERIOD_CHARGE_KWH,0)) AS D_PERIOD_CHARGE_KWH, SUM(IFNULL(D_PERIOD_DISCHA_KWH,0)) AS D_PERIOD_DISCHA_KWH
+            FROM (
+                SELECT V_SITE_ID, SUM(IFNULL(D_PERIOD_CHARGE_KWH,0)) AS D_PERIOD_CHARGE_KWH, SUM(IFNULL(D_PERIOD_DISCHA_KWH,0)) AS D_PERIOD_DISCHA_KWH
+                FROM NRT_PCS_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                GROUP BY V_SITE_ID, V_DEVICE_ID
+            ) AS A
+        ) AS PCS
+        ON SITE.V_SITE_ID = PCS.V_SITE_ID
+    </select>
+
+    <select id="getHistoryOperationTableCnt" resultType="int" parameterType="map">
+        /* historyMapper.getHistoryOperationTableCnt */
+        SELECT COUNT(*)
+        FROM
+        (
+            SELECT
+                V_TIME AS time
+                , SUM(IFNULL(periodGenKwh,0)) AS periodGenKwh
+                , SUM(IFNULL(periodChargeKwh,0)) AS periodChargeKwh
+                , SUM(IFNULL(periodDischaKwh,0)) AS periodDischaKwh
+            FROM
+            (
+                (
+                    SELECT
+                        V_TIME
+                        , SUM(IFNULL(D_PERIOD_GEN_KWH,0)) AS periodGenKwh
+                        , 0 AS periodChargeKwh
+                        , 0 AS periodDischaKwh
+                    FROM NRT_PVI_${periodTableName}_STAT
+                    WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                    GROUP BY V_SITE_ID, V_TIME
+                )
+                UNION ALL
+                (
+                    SELECT
+                        V_TIME
+                        , 0 AS periodGenKwh
+                        , SUM(IFNULL(D_PERIOD_CHARGE_KWH,0)) AS periodChargeKwh
+                        , SUM(IFNULL(D_PERIOD_DISCHA_KWH,0)) AS periodDischaKwh
+                    FROM NRT_PCS_${periodTableName}_STAT
+                    WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                    GROUP BY V_SITE_ID, V_TIME
+                )
+            ) AS DATA
+            GROUP BY V_TIME
+        ) AS A
+    </select>
+
+    <select id="getHistoryOperationTable" resultType="com.nuri.mys.bems.domain.entity.history.HistoryOperationTableRes"
+            parameterType="map">
+        /* historyMapper.getHistoryOperationTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+                V_TIME AS time
+                , SUM(IFNULL(pviPeriodGenKwh,0)) AS periodGenKwh
+                , SUM(IFNULL(periodChargeKwh,0)) AS periodChargeKwh
+                , SUM(IFNULL(periodDischaKwh,0)) AS periodDischaKwh
+                , SUM(IFNULL(totGenKwh,0)) AS totGenKwh
+                , SUM(IFNULL(totChargeKwh,0)) AS totChargeKwh
+                , SUM(IFNULL(totDischaKwh,0)) AS totDischaKwh
+        FROM (
+            (
+                SELECT V_SITE_ID, V_TIME
+                , SUM(IFNULL(D_PERIOD_GEN_KWH,0)) AS pviPeriodGenKwh
+                , MAX(IFNULL(D_TOT_GEN_KWH, 0)) AS totGenKwh
+                , 0 AS periodChargeKwh
+                , 0 AS periodDischaKwh
+                , 0 AS totChargeKwh
+                , 0 AS totDischaKwh
+                FROM NRT_PVI_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                GROUP BY V_SITE_ID, V_TIME
+            )
+            UNION ALL
+            (
+                SELECT V_SITE_ID, V_TIME
+                , 0 AS pviPeriodGenKwh
+                , 0 AS totGenKwh
+                , SUM(IFNULL(D_PERIOD_CHARGE_KWH,0)) AS periodChargeKwh
+                , SUM(IFNULL(D_PERIOD_DISCHA_KWH,0)) AS periodDischaKwh
+                , MAX(IFNULL(D_TOT_CHARGE_KWH, 0)) AS totChargeKwh
+                , MAX(IFNULL(D_TOT_DISCHA_KWH, 0)) AS totDischaKwh
+                FROM NRT_PCS_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                GROUP BY V_SITE_ID, V_TIME
+            )
+        ) AS DATA
+        GROUP BY V_TIME
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getHistoryOperationChart" resultType="com.nuri.mys.bems.domain.entity.history.HistoryOperationChartRes"
+            parameterType="map">
+        /* historyMapper.getHistoryOperationChart */
+        SELECT
+            V_TIME AS time
+            , SUM(IFNULL(periodGenKwh,0)) AS periodGenKwh
+            , SUM(IFNULL(periodChargeKwh,0)) AS periodChargeKwh
+            , SUM(IFNULL(periodDischaKwh,0)) AS periodDischaKwh
+        FROM (
+            (
+                SELECT V_SITE_ID, V_TIME
+                    , SUM(IFNULL(D_PERIOD_GEN_KWH,0)) AS periodGenKwh
+                    , 0 AS periodChargeKwh
+                    , 0 AS periodDischaKwh
+                FROM NRT_PVI_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                GROUP BY V_SITE_ID, V_TIME
+            )
+            UNION ALL
+            (
+                SELECT V_SITE_ID, V_TIME
+                , 0 AS periodGenKwh
+                , SUM(IFNULL(D_PERIOD_CHARGE_KWH,0)) AS periodChargeKwh
+                , SUM(IFNULL(D_PERIOD_DISCHA_KWH,0)) AS periodDischaKwh
+                FROM NRT_PCS_${periodTableName}_STAT
+                WHERE <![CDATA[(V_TIME >= #{dateFrom} AND V_TIME < #{dateTo})]]>
+                GROUP BY V_SITE_ID, V_TIME
+            )
+        ) AS DATA
+        GROUP BY V_TIME
+    </select>
+
+    <select id="getEventStatisticsSummary" resultType="com.nuri.mys.bems.domain.entity.history.HistoryEventSumRes"
+            parameterType="map">
+        /* historyMapper.getEventStatisticsSummary */
+        SELECT
+            V_DETAIL_CD AS grId, V_CD_NM AS grNm, IFNULL(fault, 0) AS fault, IFNULL(warning, 0) AS warning
+        FROM NST_CD_DETAIL AS CD
+        LEFT JOIN (
+            SELECT
+                V_GR_ID
+                , SUM(if(EVENT01.V_EVENT_LVL='F',1,0)) AS fault
+                , SUM(if(EVENT01.V_EVENT_LVL='W',1,0)) as warning
+            FROM NHT_EVENT AS EVENT01
+            <where>
+                <if test="(dateFrom != null and dateFrom !='') and (dateTo != null and dateTo !='')">
+                    <![CDATA[
+                    AND EVENT01.V_START_TIME >= #{dateFrom}
+                    AND EVENT01.V_START_TIME < #{dateTo}
+                ]]>
+                </if>
+            </where>
+            GROUP BY EVENT01.V_GR_ID
+        ) AS DATA
+        ON CD.V_DETAIL_CD = DATA.V_GR_ID
+        WHERE CD.V_MASTER_CD = 'SM400';
+    </select>
+
+    <select id="getEventStatisticsTableCnt" resultType="int" parameterType="map">
+        /* historyMapper.getEventStatisticsTableCnt */
+        SELECT
+               COUNT(*)
+        FROM (
+            SELECT EVENT01.V_SITE_ID
+                , EVENT01.N_EVENT_SEQ
+                , EVENT01.V_START_TIME
+                , EVENT01.V_END_TIME
+                , EVENT01.V_DEVICE_ID
+                , EVENT01.V_EVENT_LVL
+                , EVENT01.V_EVENT_STATUS_CD
+                , EVENT01.V_EVENT_NM
+                , EVENT01.V_EVENT_DESC
+            FROM NHT_EVENT AS EVENT01
+            WHERE <![CDATA[ (EVENT01.V_START_TIME >=#{dateFrom} AND EVENT01.V_START_TIME < #{dateTo}) ]]>
+            <if test="grId != null and grId !=''"> <!-- 장비그룹 -->
+                AND EVENT01.V_GR_ID = #{grId}
+            </if>
+            <if test="eventLvl != null and eventLvl !=''"> <!-- 수위 -->
+                AND EVENT01.V_EVENT_LVL =  #{eventLvl}
+            </if>
+            <if test="deviceId != null and deviceId !=''"> <!-- 장비 -->
+                AND  EVENT01.V_DEVICE_ID = #{deviceId}
+            </if>
+        ) AS E
+        LEFT OUTER JOIN nst_device_info D ON D.V_DEVICE_ID = E.V_DEVICE_ID
+        LEFT OUTER JOIN nst_cd_detail CD ON CD.V_MASTER_CD = 'SM010'
+        AND CD.V_DETAIL_CD = E.V_EVENT_LVL
+        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM049'
+        AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
+        <where>
+            <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
+                AND E.V_EVENT_STATUS_CD =  #{eventStatusCd}
+            </if>
+        </where>
+    </select>
+
+    <select id="getEventStatisticsTable" resultType="com.nuri.mys.bems.domain.entity.history.HistoryEventTableRes"
+            parameterType="map">
+        /* eventMapper.getEventStatisticsTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+                E.V_START_TIME AS startTime
+                , E.V_END_TIME AS endTime
+                , E.V_DEVICE_ID AS deviceId
+                , D.V_DEVICE_NM AS deviceNm
+                , CD.V_CD_DESC AS eventLvlNm
+                , E.V_EVENT_STATUS_CD AS eventStatusCd
+                , CD2.V_CD_NM AS eventStatusNm
+                , E.V_EVENT_NM AS eventNm
+                , E.V_EVENT_DESC AS eventDesc
+                , E.N_EVENT_SEQ AS eventSeq
+        FROM (
+            SELECT EVENT01.V_SITE_ID
+                , EVENT01.N_EVENT_SEQ
+                , EVENT01.V_START_TIME
+                , EVENT01.V_END_TIME
+                , EVENT01.V_DEVICE_ID
+                , EVENT01.V_EVENT_LVL
+                , EVENT01.V_EVENT_STATUS_CD
+                , EVENT01.V_EVENT_NM
+                , EVENT01.V_EVENT_DESC
+            FROM NHT_EVENT AS EVENT01
+            WHERE <![CDATA[ (EVENT01.V_START_TIME >=#{dateFrom} AND EVENT01.V_START_TIME < #{dateTo}) ]]>
+            <if test="grId != null and grId !=''"> <!-- 장비그룹 -->
+                AND EVENT01.V_GR_ID = #{grId}
+            </if>
+            <if test="eventLvl != null and eventLvl !=''"> <!-- 수위 -->
+                AND EVENT01.V_EVENT_LVL =  #{eventLvl}
+            </if>
+            <if test="deviceId != null and deviceId !=''"> <!-- 장비 -->
+                AND EVENT01.V_DEVICE_ID = #{deviceId}
+            </if>
+        ) AS E
+        LEFT OUTER JOIN nst_device_info D ON D.V_DEVICE_ID = E.V_DEVICE_ID
+        LEFT OUTER JOIN nst_cd_detail CD ON CD.V_MASTER_CD = 'SM010'
+            AND CD.V_DETAIL_CD = E.V_EVENT_LVL
+        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM049'
+            AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
+        <where>
+            <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
+                AND E.V_EVENT_STATUS_CD =  #{eventStatusCd}
+            </if>
+        </where>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getStatisticsPcsTable" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDevicePcsDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsPcsTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+            V_DEVICE_ID as deviceId,
+            v_device_nm as deviceNm,
+            v_time as time,
+            (SELECT count(*) FROM nrt_pcs_${periodTableName}_stat
+                WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+                <if test="deviceId != null and deviceId !=''">
+                    AND v_device_id = #{deviceId}
+                </if>
+            ) as dataTotalCount
+            , V_COMM_STATUS AS comYn
+            , V_RUN_STATUS AS runState
+            , V_TRIP_STATUS AS tripState
+            , V_CHADI_STATUS AS chargeState
+            , D_PERIOD_CHARGE_KWH as periodChargeKwh
+            , D_PERIOD_DISCHA_KWH as periodDischargeKwh
+            , D_BAT_DC_A AS batA
+            , D_BAT_DC_V AS batV
+            , D_BAT_DC_KW AS batKw
+            , D_DC_LINK_A AS dcLinkA
+            , D_DC_LINK_V AS dcLinkV
+            , D_ACT_KW as actKw
+            , D_REACT_KW as reactKw
+            , D_PF as gridPF
+            , D_FREQ as gridFreq
+            , D_GRID_RS_V AS gridVRS
+            , D_GRID_ST_V AS gridVST
+            , D_GRID_TR_V AS gridVTR
+            , D_IN_TEMP as boxTemp
+            , D_OUT_TEMP as outTemp
+            , D_GRID_R_A as gridAR
+            , D_GRID_S_A as gridAS
+            , D_GRID_T_A as gridAT
+        FROM nrt_pcs_${periodTableName}_stat PCS
+        WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND v_device_id = #{deviceId}
+        </if>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getStatisticsPcsChart" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDevicePcsDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsPcsChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="item" separator="," index="index">
+            ${item}
+        </foreach>
+        FROM
+        (
+            SELECT
+                V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM as deviceNm
+                , V_TIME as time
+                , D_ACT_KW as actKw
+                , D_REACT_KW as reactKw
+                , D_BAT_DC_V AS batV
+                , D_BAT_DC_A AS batA
+                , D_BAT_DC_KW AS batKw
+                , D_DC_LINK_V as dcLinkV
+                , D_DC_LINK_A AS dcLinkA
+                , D_GRID_RS_V AS gridVRS
+                , D_GRID_ST_V AS gridVST
+                , D_GRID_TR_V AS gridVTR
+                , D_GRID_R_A AS gridAR
+                , D_GRID_S_A AS gridAS
+                , D_GRID_T_A AS gridAT
+                , D_IN_TEMP as boxTemp
+                , D_OUT_TEMP as outTemp
+                , D_PF AS gridPF
+                , D_FREQ AS gridFreq
+            FROM nrt_pcs_${periodTableName}_stat PCS
+            WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+            <if test="deviceId != null and deviceId !=''">
+                AND v_device_id = #{deviceId}
+            </if>
+        ) AS DATA
+    </select>
+
+    <select id="getStatisticsBmsTable" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDeviceBmsDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsBmsTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+            v_device_id as deviceId,
+            v_device_nm as deviceNm,
+            v_time as time,
+            (SELECT count(*) FROM nrt_bms_${periodTableName}_stat
+                WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+                <if test="deviceId != null and deviceId !=''">
+                    AND v_device_id = #{deviceId}
+                </if>
+            ) as dataTotalCount
+            , V_COMM_STATUS AS comYn
+            , V_RELAY_STATUS AS relayState
+            , V_TRIP_STATUS AS tripState
+            , V_CHADI_STATUS AS chargeState
+            , D_BAT_DC_V as batV
+            , D_BAT_DC_A as batA
+            , D_BAT_DC_KW AS batKw
+            , D_BAT_SOC as batSoc
+            , D_BAT_SOH as batSoh
+            , D_CELL_V_MAX as maxCellV -- 최대 셀 전압
+            , D_CELL_TEMP_MAX as maxCellT -- 최대 셀 온도
+            , D_CELL_V_MIN as minCellV -- 최소 셀 전압
+            , D_CELL_TEMP_MIN as minCellT -- 최소 셀 온도
+        FROM nrt_bms_${periodTableName}_stat BMS
+        WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND v_device_id = #{deviceId}
+        </if>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getStatisticsBmsChart" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDeviceBmsDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsBmsChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="item" separator="," index="index">
+            ${item}
+        </foreach>
+        FROM
+        (
+            SELECT
+                V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM as deviceNm
+                , V_TIME as time
+                , D_BAT_DC_KW as batKw
+                , D_BAT_DC_V as batV
+                , D_BAT_DC_A as batA
+                , D_BAT_SOC as batSoc
+                , D_BAT_SOH as batSoh
+                , D_CELL_V_MAX as maxCellV -- 최대 셀 전압
+                , D_CELL_TEMP_MAX as maxCellT -- 최대 셀 온도
+                , D_CELL_V_MIN as minCellV -- 최소 셀 전압
+                , D_CELL_TEMP_MIN as minCellT -- 최소 셀 온도
+            FROM nrt_bms_${periodTableName}_stat BMS
+            WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+            <if test="deviceId != null and deviceId !=''">
+                AND v_device_id = #{deviceId}
+            </if>
+        ) AS DATA
+    </select>
+
+    <select id="getStatisticsPviTable" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDevicePviDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsPviTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+            v_device_id as deviceId,
+            v_device_nm as deviceNm,
+            v_time as time,
+            (SELECT count(*) FROM nrt_pvi_${periodTableName}_stat
+                WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+                <if test="deviceId != null and deviceId !=''">
+                    AND v_device_id = #{deviceId}
+                </if>
+            ) as dataTotalCount
+            , V_COMM_STATUS AS comYn
+            , V_RUN_STATUS AS runState
+            , V_TRIP_STATUS AS tripState
+            , V_GEN_STATUS AS genState
+            , D_ACT_KW AS actKw
+            , D_DC_V AS dcV
+            , D_DC_A AS dcA
+            , D_DC_KW AS dcKw
+            , D_GRID_RS_V AS gridVRS
+            , D_GRID_ST_V AS gridVST
+            , D_GRID_TR_V AS gridVTR
+            , D_GRID_R_A AS gridAR
+            , D_GRID_S_A AS gridAS
+            , D_GRID_T_A AS gridAT
+            , D_IN_TEMP AS boxTemp
+            , D_OUT_TEMP AS outTemp
+            , D_FREQ AS gridPF
+            , D_PF AS gridFreq
+        FROM nrt_pvi_${periodTableName}_stat PVI
+        WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND v_device_id = #{deviceId}
+        </if>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getStatisticsPviChart" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDevicePviDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsPviChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="item" separator="," index="index">
+            ${item}
+        </foreach>
+        FROM
+        (
+        SELECT
+            V_DEVICE_ID AS deviceId
+            , V_DEVICE_NM as deviceNm
+            , V_TIME as time
+            , D_ACT_KW AS actKw
+            , D_DC_V AS dcV
+            , D_DC_A AS dcA
+            , D_DC_KW AS dcKw
+            , D_GRID_RS_V AS gridVRS
+            , D_GRID_ST_V AS gridVST
+            , D_GRID_TR_V AS gridVTR
+            , D_GRID_R_A AS gridAR
+            , D_GRID_S_A AS gridAS
+            , D_GRID_T_A AS gridAT
+            , D_IN_TEMP AS boxTemp
+            , D_OUT_TEMP AS outTemp
+            , D_FREQ AS gridFreq
+            , D_PF AS gridPF
+        FROM nrt_pvi_${periodTableName}_stat
+        WHERE  <![CDATA[ v_time >= #{dateFrom} AND v_time < #{dateTo} ]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND v_device_id = #{deviceId}
+        </if>
+        ) AS DATA
+    </select>
+
+    <select id="getStatisticsThsTable" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDeviceThsDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsThsTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+            V_DEVICE_ID as deviceId,
+            V_DEVICE_NM as deviceNm,
+            V_TIME as time,
+            (SELECT COUNT(*) FROM NRT_THS_${periodTableName}_STAT
+                WHERE  <![CDATA[ V_TIME >= #{dateFrom} AND V_TIME < #{dateTo} ]]>
+                <if test="deviceId != null and deviceId !=''">
+                    AND V_DEVICE_ID = #{deviceId}
+                </if>
+            ) AS dataTotalCount,
+            D_SEN_01 as sen01,
+            D_SEN_02 as sen02
+        FROM NRT_THS_${periodTableName}_STAT AS THS
+        LEFT JOIN NST_CD_DETAIL AS CD
+        ON THS.V_LOC_CD = CD.V_DETAIL_CD
+        WHERE CD.V_MASTER_CD = 'SM019'
+        AND <![CDATA[ V_TIME >= #{dateFrom} AND V_TIME < #{dateTo} ]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND V_DEVICE_ID = #{deviceId}
+        </if>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getStatisticsThsChart" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDeviceThsDataRes"
+            parameterType="map">
+        /* historyMapper.getStatisticsThsChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="item" separator="," index="index">
+            ${item}
+        </foreach>
+        FROM
+        (
+            SELECT
+                V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM as deviceNm
+                , V_TIME as time
+                , D_SEN_01 as sen01
+                , D_SEN_02 as sen02
+            FROM NRT_THS_${periodTableName}_STAT AS THS
+            WHERE  <![CDATA[ V_TIME >= #{dateFrom} AND V_TIME < #{dateTo} ]]>
+            <if test="deviceId != null and deviceId !=''">
+                AND V_DEVICE_ID = #{deviceId}
+            </if>
+        ) AS DATA
+    </select>
+
+    <select id="getEventLatestTableData" resultType="com.nuri.mys.bems.domain.entity.history.HistoryEventTableRes"
+            parameterType="map">
+        /* eventMapper.getEventLatestTableData */
+        SELECT
+            E.V_START_TIME AS startTime
+            , E.V_END_TIME AS endTime
+            , E.V_DEVICE_ID AS deviceId
+            , D.V_DEVICE_NM AS deviceNm
+            , CD.V_CD_DESC AS eventLvlNm
+            , E.V_EVENT_STATUS_CD AS eventStatusCd
+            , CD2.V_CD_NM AS eventStatusNm
+            , E.V_EVENT_NM AS eventNm
+            , E.V_EVENT_DESC AS eventDesc
+            , E.N_EVENT_SEQ AS eventSeq
+        FROM (
+            SELECT EVENT01.V_SITE_ID
+                , EVENT01.N_EVENT_SEQ
+                , EVENT01.V_START_TIME
+                , EVENT01.V_END_TIME
+                , EVENT01.V_DEVICE_ID
+                , EVENT01.V_EVENT_LVL
+                , EVENT01.V_EVENT_STATUS_CD
+                , EVENT01.V_EVENT_NM
+                , EVENT01.V_EVENT_DESC
+            FROM NHT_EVENT AS EVENT01
+        ) AS E
+        LEFT OUTER JOIN nst_device_info D ON D.V_DEVICE_ID = E.V_DEVICE_ID
+        LEFT OUTER JOIN nst_cd_detail CD ON CD.V_MASTER_CD = 'SM010'
+        AND CD.V_DETAIL_CD = E.V_EVENT_LVL
+        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM049'
+        AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
+        ORDER BY E.V_START_TIME DESC
+        LIMIT 10
+    </select>
+
+    <select id="getEventLatestSummaryData" resultType="com.nuri.mys.bems.domain.entity.history.HistoryEventSumRes"
+            parameterType="map">
+        /* historyMapper.getEventLatestSummaryData */
+        SELECT
+            V_DETAIL_CD AS grId, CD.V_CD_NM AS grNm, IFNULL(fault, 0) AS fault, IFNULL(warning, 0) AS warning
+        FROM NST_CD_DETAIL AS CD
+        LEFT JOIN (
+            SELECT
+                V_GR_ID
+                , SUM(if(E.V_EVENT_LVL='F',1,0)) AS fault
+                , SUM(if(E.V_EVENT_LVL='W',1,0)) as warning
+            FROM (
+                 SELECT EVENT01.V_GR_ID, EVENT01.V_EVENT_LVL
+                 FROM NHT_EVENT AS EVENT01
+                 ORDER BY EVENT01.V_START_TIME DESC
+                 LIMIT 10
+            ) AS E
+            GROUP BY E.V_GR_ID
+        ) AS DATA
+        ON CD.V_DETAIL_CD = DATA.V_GR_ID
+        WHERE CD.V_MASTER_CD = 'SM400'
+    </select>
+
+    <select id="getPcsRealtimeData" resultType="com.nuri.mys.bems.domain.entity.realtime.HistoryRealtimePcsDataRes"
+            parameterType="map">
+        /* historyMapper.getPcsRealtimeData */
+        SELECT
+            PCS.V_DEVICE_ID AS deviceId
+            , DEVICE.V_DEVICE_NM AS deviceNm
+            , DATE_FORMAT(V_TIME, '%Y-%m-%d %T') AS time
+            , V_COMM_STATUS AS comYn
+            , V_RUN_STATUS AS runState
+            , V_TRIP_STATUS AS tripState
+            , V_CHADI_STATUS AS chargeState
+            , D_ACT_KW AS actKw
+            , D_REACT_KW AS reactKw
+            , D_TOT_CHARGE_KWH AS totChargeKwh
+            , D_TOT_DISCHA_KWH AS totDischaKwh
+            , D_BAT_DC_V AS batV
+            , D_BAT_DC_A AS batA
+            , D_BAT_DC_KW AS batKw
+            , D_PF AS gridPF
+            , D_GRID_RS_V AS gridVRS
+            , D_GRID_ST_V AS gridVST
+            , D_GRID_TR_V AS gridVTR
+            , D_DC_LINK_V AS dcLinkV
+            , D_DC_LINK_A AS dcLinkA
+            , D_IN_TEMP AS boxTemp
+            , D_OUT_TEMP AS outTemp
+            , D_FREQ AS gridFreq
+            , D_GRID_R_A AS gridAR
+            , D_GRID_S_A AS gridAS
+            , D_GRID_T_A AS gridAT
+            , DATE_FORMAT(PCS.T_CREATE_DT, '%Y-%m-%d %T') AS createDt
+        FROM NRT_PCS_REALTIME AS PCS
+        LEFT JOIN NST_DEVICE_INFO AS DEVICE
+        ON PCS.V_SITE_ID = DEVICE.V_SITE_ID
+        AND PCS.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        WHERE <![CDATA[V_TIME >= #{dateFrom} AND V_TIME < #{dateTo}]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND PCS.V_DEVICE_ID = #{deviceId}
+        </if>
+    </select>
+
+    <select id="getBmsRealtimeData" resultType="com.nuri.mys.bems.domain.entity.realtime.HistoryRealtimeBmsDataRes"
+            parameterType="map">
+        /* historyMapper.getBmsRealtimeData */
+        SELECT
+            BMS.V_DEVICE_ID AS deviceId
+            , DEVICE.V_DEVICE_NM AS deviceNm
+            , DATE_FORMAT(V_TIME, '%Y-%m-%d %T') AS time
+            , V_COMM_STATUS AS comYn
+            , V_RELAY_STATUS AS relayState
+            , V_TRIP_STATUS AS tripState
+            , V_CHADI_STATUS AS chargeState
+            , D_BAT_DC_V AS batV
+            , D_BAT_DC_A AS batA
+            , D_BAT_DC_KW AS batKw
+            , D_BAT_SOC AS batSoc
+            , D_BAT_SOH AS batSoh
+            , D_CELL_V_MAX AS maxCellV -- 최대 셀 전압
+            , D_CELL_TEMP_MAX AS maxCellT -- 최대 셀 온도
+            , D_CELL_V_MIN AS minCellV -- 최소 셀 전압
+            , D_CELL_TEMP_MIN AS minCellT -- 최소 셀 온도
+            , D_CHARGE_LIMIT_KW AS chaPowLimit
+            , D_DISCHA_LIMIT_KW AS disPowLimit
+            , DATE_FORMAT(BMS.T_CREATE_DT, '%Y-%m-%d %T') AS createDt
+        FROM NRT_BMS_REALTIME AS BMS
+        LEFT JOIN NST_DEVICE_INFO AS DEVICE
+        ON BMS.V_SITE_ID = DEVICE.V_SITE_ID
+        AND BMS.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        WHERE <![CDATA[V_TIME >= #{dateFrom} AND V_TIME < #{dateTo}]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND BMS.V_DEVICE_ID = #{deviceId}
+        </if>
+    </select>
+
+    <select id="getPviRealtimeData" resultType="com.nuri.mys.bems.domain.entity.realtime.HistoryRealtimePviDataRes"
+            parameterType="map">
+        /* historyMapper.getPviRealtimeData */
+        SELECT
+            PVI.V_DEVICE_ID as deviceId
+            , DEVICE.V_DEVICE_NM as deviceNm
+            , DATE_FORMAT(V_TIME, '%Y-%m-%d %T') AS time
+            , V_COMM_STATUS AS comYn
+            , V_RUN_STATUS AS runState
+            , V_TRIP_STATUS AS tripState
+            , V_GEN_STATUS AS genState
+            , D_ACT_KW AS actKw
+            , D_TOT_GEN_KWH AS totGenKwh
+            , D_DC_V AS dcV
+            , D_DC_A AS dcA
+            , D_DC_KW AS dcKw
+            , D_GRID_RS_V AS gridVRS
+            , D_GRID_ST_V AS gridVST
+            , D_GRID_TR_V AS gridVTR
+            , D_GRID_R_A AS gridAR
+            , D_GRID_S_A AS gridAS
+            , D_GRID_T_A AS gridAT
+            , D_IN_TEMP AS boxTemp
+            , D_OUT_TEMP AS outTemp
+            , D_FREQ AS gridFreq
+            , D_PF AS gridPF
+            , DATE_FORMAT(PVI.T_CREATE_DT, '%Y-%m-%d %T') AS createDt
+        FROM NRT_PVI_REALTIME AS PVI
+        LEFT JOIN NST_DEVICE_INFO AS DEVICE
+        ON PVI.V_SITE_ID = DEVICE.V_SITE_ID
+        AND PVI.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        WHERE <![CDATA[V_TIME >= #{dateFrom} AND V_TIME < #{dateTo}]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND PVI.V_DEVICE_ID = #{deviceId}
+        </if>
+    </select>
+
+    <select id="getThsRealtimeData" resultType="com.nuri.mys.bems.domain.entity.history.HistoryDeviceThsDataRes"
+            parameterType="map">
+        /* historyMapper.getThsRealtimeData */
+        SELECT
+            THS.V_DEVICE_ID as deviceId
+            , DEVICE.V_DEVICE_NM as deviceNm
+            , DATE_FORMAT(V_TIME, '%Y-%m-%d %T') AS time
+            , D_SEN_01 as sen01
+            , D_SEN_02 as sen02
+        FROM NRT_THS_REALTIME AS THS
+        LEFT JOIN NST_DEVICE_INFO AS DEVICE
+        ON THS.V_SITE_ID = DEVICE.V_SITE_ID
+        AND THS.V_DEVICE_ID = DEVICE.V_DEVICE_ID
+        WHERE <![CDATA[V_TIME >= #{dateFrom} AND V_TIME < #{dateTo}]]>
+        <if test="deviceId != null and deviceId !=''">
+            AND THS.V_DEVICE_ID = #{deviceId}
+        </if>
+    </select>
+</mapper>

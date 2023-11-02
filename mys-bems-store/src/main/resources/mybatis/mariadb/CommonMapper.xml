@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.common.CommonMapper">
+
+    <select id="getCommonDeviceInfo" parameterType="String" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* commonMapper.getCommonDeviceInfo */
+        SELECT V_DETAIL_CD AS detailCd, V_CD_NM AS cdNm, V_CD_ENG_NM AS cdEngNm, V_CD_HAN_NM AS cdHanNm
+        FROM NST_DEVICE_INFO AS DEVICE
+        LEFT JOIN NST_CD_DETAIL AS CD
+        ON DEVICE.V_GR_ID = CD.V_DETAIL_CD
+        WHERE V_MASTER_CD = 'SM400'
+        GROUP BY V_GR_ID
+    </select>
+
+    <select id="getCommonDeviceDetailInfo" parameterType="map" resultType="com.nuri.mys.bems.domain.entity.common.CommonDeviceDetailRes">
+        /* commonMapper.getCommonDeviceInfo */
+        SELECT V_DEVICE_ID AS deviceId, V_DEVICE_NM AS deviceNm
+        FROM NST_DEVICE_INFO
+        WHERE V_GR_ID = #{grId}
+    </select>
+
+    <select id="getMessageStatusCode" parameterType="String" resultType="String">
+        /* commonMapper.getMessageStatusCode */
+        SELECT V_DETAIL_CD AS detailCd
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM024'
+        AND V_CD_NM = #{cdNm}
+    </select>
+
+    <select id="getMessageStatusCodeNew" parameterType="String" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* commonMapper.getMessageStatusCodeNew */
+        SELECT
+            V_DETAIL_CD AS detailCd
+            , V_CD_NM AS cdNm
+            , V_CD_ENG_NM AS cdEngNm
+        FROM    NST_CD_DETAIL
+        WHERE   V_MASTER_CD = 'SM024'
+        AND V_CD_NM = #{cdNm}
+    </select>
+
+    <select id="getEventLevel" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes"
+            parameterType="map">
+        /* commonMapper.getEventLevel */
+        SELECT
+            V_DETAIL_CD AS detailCd
+            , V_CD_NM AS cdNm
+            , V_CD_ENG_NM AS cdEngNm
+            , V_CD_HAN_NM AS cdHanNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM010'
+    </select>
+
+    <select id="getEventStatus" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes"
+            parameterType="map">
+        /* commonMapper.getEventStatus */
+        SELECT
+            V_DETAIL_CD AS detailCd
+             , V_CD_NM AS cdNm
+             , V_CD_ENG_NM AS cdEngNm
+             , V_CD_HAN_NM AS cdHanNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM049'
+    </select>
+
+    <select id="getThsLocInfo" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">
+        /* CommonMapper.getThsLocInfo */
+        SELECT
+            V_DETAIL_CD AS detailCd
+            , V_CD_NM AS cdNm
+            , V_CD_ENG_NM AS cdEngNm
+            , V_CD_HAN_NM AS cdHanNm
+        FROM NST_CD_DETAIL
+        WHERE V_MASTER_CD = 'SM019'
+    </select>
+
+    <select id="getSiteId" resultType="String">
+        /* CommonMapper.getSiteId */
+        SELECT V_SITE_ID
+        FROM NST_PMS_SETTING
+        WHERE V_CATEGORY = "sysOPMode"
+    </select>
+
+    <select id="getPmsUserSmsInfo" parameterType="org.json.simple.JSONObject" resultType="org.json.simple.JSONObject">
+        /* CommonMapper.getPmsUserSmsInfo */
+        SELECT TRIM(LEADING ',' FROM GROUP_CONCAT(DISTINCT email)) AS email
+            , TRIM(LEADING ',' FROM GROUP_CONCAT(DISTINCT telegramId)) AS telegramId
+            , TRIM(LEADING ',' FROM GROUP_CONCAT(DISTINCT mobileNo)) AS mobileNo
+        FROM (
+             SELECT IF(V_EMAIL_REC_YN = 'Y', V_EMAIL, NULL) AS email
+                  , IF(V_TELEGRAM_REC_YN = 'Y', V_TELEGRAM_ID, NULL) telegramId
+                  , IF(V_SMS_REC_YN = 'Y', V_MOBILE_NO, NULL) mobileNo
+             FROM NST_USER_INFO
+             WHERE V_EVENT_REC_YN = 'Y'
+               AND ( V_EMAIL_REC_YN = 'Y'
+                 OR V_TELEGRAM_REC_YN = 'Y'
+                 OR V_SMS_REC_YN = 'Y')
+        ) AS A
+    </select>
+
+    <select id="getUmsClassification" resultType="String">
+        /* CommonMapper.getPmsUserSmsInfo */
+        SELECT GROUP_CONCAT(V_COLUMN ORDER BY N_KEY_ORD) AS division
+        FROM (
+            SELECT N_KEY_ORD
+                , CASE
+                    WHEN V_KEY = 'useAlarmSMS' THEN 'LG_V1.0'
+                    WHEN V_KEY = 'useAlarmTelegram' THEN 'Telegram_V1.0'
+                    WHEN V_KEY = 'useAlarmEmail' THEN 'Gmail_V1.0'
+                ELSE '' END AS V_COLUMN
+            FROM NST_SYSTEM_SETTING
+            WHERE V_KEY IN ('useAlarmSMS', 'useAlarmEmail', 'useAlarmTelegram')
+            AND V_VALUE = 'Y'
+            ORDER BY N_KEY_ORD
+        ) AS DIVISION
+    </select>
+
+    <insert id="saveUmsHistory" parameterType="map">
+        /* CommonMapper.saveUmsHistory */
+        INSERT INTO UMS.${tableNm}
+        (
+            V_URL_DIVISION, V_ID, V_CONTENTS, V_PROJECT, V_DECODING_DATA
+            , V_STATUS, V_EXCETION, T_CREATE_DT, T_UPDATE_DT
+        )
+        VALUES
+        (
+            #{vUrlDevision}, #{id}, #{contents}, #{project}, #{data}
+            , #{status}, #{errorExcetion}, now(), now()
+        )
+    </insert>
+
+    <select id="getSiteNm" parameterType="map" resultType="String">
+        /* CommonMapper.getSiteNm */
+        SELECT V_SITE_NM
+        FROM NST_SITE_INFO
+        WHERE V_SITE_ID = #{siteId}
+    </select>
+
+    <select id="getDevNm" parameterType="map" resultType="String">
+        /* CommonMapper.getDevNm */
+        SELECT V_DEVICE_NM
+        FROM NST_DEVICE_INFO
+        WHERE V_SITE_ID = #{siteId}
+        AND V_DEVICE_ID = #{devId}
+    </select>
+</mapper>

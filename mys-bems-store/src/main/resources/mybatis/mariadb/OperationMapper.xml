@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.operation.OperationMapper">
+
+    <select id="getSolarGenSummary" resultType="com.nuri.mys.bems.domain.entity.operation.OperationSummaryRes">
+        /*OperationMapper.getPviDailyGenData */
+        SELECT SUM(IFNULL(D_TOT_GEN_KWH, 0)) AS totGenKwh
+            , SUM(IFNULL(D_PERIOD_GEN_KWH, 0)) AS periodGenKwh
+        FROM NRT_PVI_DAILY_STAT
+        WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m%d')
+    </select>
+
+    <select id="getEssSummary" resultType="com.nuri.mys.bems.domain.entity.operation.OperationSummaryRes">
+        /*OperationMapper.getEssSummary */
+        SELECT SUM(IFNULL(D_TOT_CHARGE_KWH, 0)) AS totChargeKwh
+             , SUM(IFNULL(D_PERIOD_CHARGE_KWH, 0)) AS periodChargeKwh
+             , SUM(IFNULL(D_TOT_DISCHA_KWH, 0)) AS totDischaKwh
+             , SUM(IFNULL(D_PERIOD_DISCHA_KWH, 0)) AS periodDischaKwh
+        FROM NRT_PCS_DAILY_STAT
+        WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m%d')
+    </select>
+
+    <select id="getOperationChart" resultType="com.nuri.mys.bems.domain.entity.operation.OperationChartRes">
+        /*OperationMapper.getOperationChart */
+        SELECT time, SUM(IFNULL(periodGenKwh, 0)) AS periodGenKwh
+            , SUM(IFNULL(periodChargeKwh, 0)) AS periodChargeKwh, SUM(IFNULL(periodDischaKwh, 0)) AS periodDischaKwh
+        FROM (
+                (
+                    SELECT V_TIME AS time, SUM(IFNULL(D_PERIOD_GEN_KWH, 0)) AS periodGenKwh, 0 AS periodChargeKwh, 0 AS periodDischaKwh
+                    FROM NRT_PVI_HOURLY_STAT
+                    WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                    GROUP BY V_TIME
+                )
+                UNION ALL
+                (
+                    SELECT V_TIME AS time, 0 AS periodGenKwh, SUM(IFNULL(D_PERIOD_CHARGE_KWH, 0)) AS periodChargeKwh, SUM(IFNULL(D_PERIOD_DISCHA_KWH, 0)) AS periodDischaKwh
+                    FROM NRT_PCS_HOURLY_STAT
+                    WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                    GROUP BY V_TIME
+                )
+        ) AS DATA
+        GROUP BY time
+    </select>
+
+    <select id="getOperationTable" resultType="com.nuri.mys.bems.domain.entity.operation.OperationTableRes">
+        /*OperationMapper.getOperationTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT time, SUM(IFNULL(periodGenKwh, 0)) AS periodGenKwh
+            , SUM(IFNULL(totGenKwh, 0)) AS totGenKwh
+            , SUM(IFNULL(periodChargeKwh, 0)) AS periodChargeKwh
+            , SUM(IFNULL(periodDischaKwh, 0)) AS periodDischaKwh
+            , SUM(IFNULL(totChargeKwh, 0)) AS totChargeKwh
+            , SUM(IFNULL(totDischaKwh, 0)) AS totDischaKwh
+        FROM (
+                (
+                    SELECT V_TIME AS time, SUM(IFNULL(D_PERIOD_GEN_KWH, 0)) AS periodGenKwh, SUM(IFNULL(D_TOT_GEN_KWH, 0)) AS totGenKwh
+                        , 0 AS periodChargeKwh, 0 AS periodDischaKwh
+                        , 0 AS totChargeKwh, 0 AS totDischaKwh
+                    FROM NRT_PVI_HOURLY_STAT
+                    WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                    GROUP BY V_TIME
+                )
+                UNION ALL
+                (
+                    SELECT V_TIME AS time, 0 AS periodGenKwh, 0 AS totGenKwh
+                    , SUM(IFNULL(D_PERIOD_CHARGE_KWH, 0)) AS periodChargeKwh
+                    , SUM(IFNULL(D_PERIOD_DISCHA_KWH, 0)) AS periodDischaKwh
+                    , SUM(IFNULL(D_TOT_CHARGE_KWH, 0)) AS totChargeKwh
+                    , SUM(IFNULL(D_TOT_DISCHA_KWH, 0)) AS totDischaKwh
+                    FROM NRT_PCS_HOURLY_STAT
+                    WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                    GROUP BY V_TIME
+                )
+        ) AS DATA
+        GROUP BY time
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getOperationTableCount" resultType="int">
+        /*OperationMapper.getOperationTableCount */
+        SELECT COUNT(*)
+        FROM (
+            SELECT time, SUM(IFNULL(solarGenKwh, 0)) AS solarGenKwh
+                , SUM(IFNULL(periodChargeKwh, 0)) AS periodChargeKwh, SUM(IFNULL(periodDischaKwh, 0)) AS periodDischaKwh
+            FROM (
+                    (
+                        SELECT V_TIME AS time, SUM(IFNULL(D_PERIOD_GEN_KWH, 0)) AS solarGenKwh, 0 AS periodChargeKwh, 0 AS periodDischaKwh
+                        FROM NRT_PVI_HOURLY_STAT
+                        WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                        GROUP BY V_TIME
+                    )
+                    UNION ALL
+                    (
+                        SELECT V_TIME AS time, 0 AS solarGenKwh, SUM(IFNULL(D_PERIOD_CHARGE_KWH, 0)) AS periodChargeKwh
+                            , SUM(IFNULL(D_PERIOD_DISCHA_KWH, 0)) AS periodDischaKwh
+                        FROM NRT_PCS_HOURLY_STAT
+                        WHERE V_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+                        GROUP BY V_TIME
+                    )
+            ) AS DATA
+            GROUP BY time
+        ) AS T
+    </select>
+
+    <select id="getPcsStatusChart" resultType="com.nuri.mys.bems.domain.entity.operation.OperationDevicePcsDataRes"
+            parameterType="map">
+        /* OperationMapper.pcsOperationStatusChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="column" separator="," index="index">
+            ${column}
+        </foreach>
+        FROM (
+            SELECT
+                V_TIME AS time
+                , V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM AS deviceNm
+                , D_ACT_KW AS actKw
+                , D_REACT_KW AS reactKw
+                , D_BAT_DC_V AS batV
+                , D_BAT_DC_A AS batA
+                , D_BAT_DC_KW AS batKw
+                , D_DC_LINK_A AS dcLinkA
+                , D_DC_LINK_V AS dcLinkV
+                , D_GRID_RS_V AS gridVRS
+                , D_GRID_ST_V AS gridVST
+                , D_GRID_TR_V AS gridVTR
+                , D_GRID_R_A AS gridAR
+                , D_GRID_S_A AS gridAS
+                , D_GRID_T_A AS gridAT
+                , D_IN_TEMP AS boxTemp
+                , D_OUT_TEMP AS outTemp
+                , D_PF AS gridPF
+                , D_FREQ AS gridFreq
+                , D_TOT_CHARGE_KWH AS totGridKwhOut
+                , D_TOT_DISCHA_KWH AS totGridKwhIn
+            FROM
+                NRT_PCS_MINLY_STAT
+            WHERE V_SITE_ID = (
+                SELECT V_SITE_ID
+                FROM NST_PMS_SETTING
+                WHERE V_CATEGORY = "sysOPMode"
+            )
+            <if test="deviceId != null and deviceId !=''">
+                AND V_DEVICE_ID = #{deviceId}
+            </if>
+            ORDER BY V_TIME DESC
+            LIMIT 90
+        ) AS DATA
+        ORDER BY time ASC
+    </select>
+
+    <select id="getBmsStatusChart" resultType="com.nuri.mys.bems.domain.entity.operation.OperationDeviceBmsDataRes"
+            parameterType="map">
+        /* OperationMapper.getBmsStatusChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="column" separator="," index="index">
+            ${column}
+        </foreach>
+        FROM (
+            SELECT
+                V_TIME AS time
+                , V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM AS deviceNm
+                , D_BAT_DC_V as batV
+                , D_BAT_DC_A as batA
+                , D_BAT_DC_KW as batKw
+                , D_BAT_SOC as batSoc
+                , D_BAT_SOH as batSoh
+                , D_CELL_V_MAX as maxCellV -- 최대 셀 전압
+                , D_CELL_TEMP_MAX as maxCellT -- 최대 셀 온도
+                , D_CELL_V_MIN as minCellV -- 최소 셀 전압
+                , D_CELL_TEMP_MIN as minCellT -- 최소 셀 온도
+                , D_CELL_V_AVG as avgCellV -- 평균 셀 전압
+                , D_CELL_TEMP_AVG as avgCellT-- 평균 셀 온도
+                , D_CHARGE_LIMIT_KW as chaPowLimit
+                , D_DISCHA_LIMIT_KW as disPowLimit
+            FROM
+                NRT_BMS_MINLY_STAT
+            WHERE V_SITE_ID = (
+                SELECT V_SITE_ID
+                FROM NST_PMS_SETTING
+                WHERE V_CATEGORY = "sysOPMode"
+            )
+            <if test="deviceId != null and deviceId !=''">
+                AND V_DEVICE_ID = #{deviceId}
+            </if>
+            ORDER BY V_TIME DESC
+            LIMIT 90
+        ) AS DATA
+        ORDER BY time ASC
+    </select>
+
+    <select id="getPviStatusChart" resultType="com.nuri.mys.bems.domain.entity.operation.OperationDevicePviDataRes"
+            parameterType="map">
+        /* OperationMapper.getPviStatusChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="column" separator="," index="index">
+            ${column}
+        </foreach>
+        FROM (
+            SELECT
+                V_TIME AS time
+                , V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM AS deviceNm
+                , D_ACT_KW AS actKw
+                , D_REACT_KW AS reactKw
+                , D_DC_V AS dcV
+                , D_DC_A AS dcA
+                , D_DC_KW AS dcKw
+                , D_GRID_RS_V AS gridVRS
+                , D_GRID_ST_V AS gridVST
+                , D_GRID_TR_V AS gridVTR
+                , D_GRID_R_A AS gridAR
+                , D_GRID_S_A AS gridAS
+                , D_GRID_T_A AS gridAT
+                , D_IN_TEMP AS boxTemp
+                , D_OUT_TEMP AS outTemp
+                , D_PF AS gridPF
+                , D_FREQ AS gridFreq
+            FROM
+                NRT_PVI_MINLY_STAT
+            WHERE V_SITE_ID = (
+                SELECT V_SITE_ID
+                FROM NST_PMS_SETTING
+                WHERE V_CATEGORY = "sysOPMode"
+            )
+            <if test="deviceId != null and deviceId !=''">
+                AND V_DEVICE_ID = #{deviceId}
+            </if>
+            ORDER BY V_TIME DESC
+            LIMIT 90
+        ) AS DATA
+        ORDER BY time ASC
+    </select>
+
+    <select id="getThsStatusChart" resultType="com.nuri.mys.bems.domain.entity.operation.OperationDeviceThsDataRes"
+            parameterType="map">
+        /* OperationMapper.getThsStatusChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="column" separator="," index="index">
+            ${column}
+        </foreach>
+        FROM (
+            SELECT
+                V_TIME AS time
+                , V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM AS deviceNm
+                , D_SEN_01 as sen01 -- 온도
+                , D_SEN_02 as sen02 -- 습도
+            FROM
+                NRT_THS_MINLY_STAT
+            WHERE V_SITE_ID = (
+                SELECT V_SITE_ID
+                FROM NST_PMS_SETTING
+                WHERE V_CATEGORY = "sysOPMode"
+            )
+            <if test="deviceId != null and deviceId !=''">
+                AND V_DEVICE_ID = #{deviceId}
+            </if>
+            ORDER BY V_TIME DESC
+            LIMIT 90
+        ) AS DATA
+        ORDER BY time ASC
+    </select>
+
+    <select id="getEventStatusSummary" resultType="com.nuri.mys.bems.domain.entity.operation.OperationEventSummaryRes">
+        /*OperationMapper.getEventStatusSummary */
+        SELECT V_DETAIL_CD AS grId, V_CD_NM AS grNm, IFNULL(fault, 0) AS fault, IFNULL(warning, 0) AS warning
+        FROM NST_CD_DETAIL AS CD
+        LEFT JOIN (
+            SELECT V_GR_ID
+                , SUM(if(EVENT01.V_EVENT_LVL='F',1,0)) AS fault
+                , SUM(if(EVENT01.V_EVENT_LVL='W',1,0)) as warning
+            FROM NHT_EVENT AS EVENT01
+            LEFT JOIN (
+                SELECT V_DEVICE_ID, V_START_TIME, V_END_TIME, V_EVENT_STATUS_CD, V_EVENT_NM
+                FROM NHT_EVENT
+                WHERE V_EVENT_STATUS_CD = 'SD005'
+                  AND V_END_TIME != ''
+                AND V_END_TIME IS NOT NULL
+            ) AS EVENT02
+            ON EVENT01.V_DEVICE_ID = EVENT02.V_DEVICE_ID
+            AND EVENT01.V_START_TIME = EVENT02.V_START_TIME
+            AND EVENT01.V_EVENT_NM = EVENT02.V_EVENT_NM
+            WHERE EVENT01.V_START_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'),'%')
+              AND EVENT01.V_EVENT_STATUS_CD != 'SD005'
+            GROUP BY EVENT01.V_GR_ID
+        ) AS DATA
+        ON CD.V_DETAIL_CD = DATA.V_GR_ID
+        WHERE CD.V_MASTER_CD = 'SM400'
+        AND V_DETAIL_CD IN ('100', '200', '311', '420')
+    </select>
+
+    <select id="getEventStatusTable" resultType="com.nuri.mys.bems.domain.entity.operation.OperationEventTableRes"
+            parameterType="map">
+        /* OperationMapper.getEventStatusTable */
+        <include refid="pagingMapper.prePaging" />
+        SELECT
+            E.N_EVENT_SEQ AS eventSeq
+            , E.V_START_TIME AS startTime
+            , E.V_END_TIME AS endTime
+            , E.V_DEVICE_ID AS deviceId
+            , D.V_DEVICE_NM AS deviceNm
+            , E.V_EVENT_LVL AS eventLvl
+            , CD.V_CD_DESC AS eventLvlNm
+            , E.V_EVENT_STATUS_CD AS eventStatusCd
+            , CD2.V_CD_NM AS eventStatusNm
+            , E.V_EVENT_NM AS eventNm
+            , E.V_EVENT_DESC AS eventDesc
+        FROM (
+            SELECT EVENT01.V_SITE_ID
+                 , EVENT01.N_EVENT_SEQ
+                 , EVENT01.V_START_TIME
+                 , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_END_TIME, EVENT01.V_END_TIME) AS V_END_TIME
+                 , EVENT01.V_DEVICE_ID
+                 , EVENT01.V_EVENT_LVL
+                 , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_EVENT_STATUS_CD, EVENT01.V_EVENT_STATUS_CD) AS V_EVENT_STATUS_CD
+                 , EVENT01.V_EVENT_NM
+                 , EVENT01.V_EVENT_DESC
+            FROM NHT_EVENT AS EVENT01
+            LEFT JOIN (
+                SELECT V_DEVICE_ID, V_START_TIME, V_END_TIME, V_EVENT_STATUS_CD, V_EVENT_NM
+                FROM NHT_EVENT
+                WHERE V_EVENT_STATUS_CD = 'SD005'
+                AND V_END_TIME != ''
+                AND V_END_TIME IS NOT NULL
+            ) AS EVENT02
+            ON EVENT01.V_DEVICE_ID = EVENT02.V_DEVICE_ID
+            AND EVENT01.V_START_TIME = EVENT02.V_START_TIME
+            AND EVENT01.V_EVENT_NM = EVENT02.V_EVENT_NM
+            WHERE EVENT01.V_START_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'),'%')
+            AND EVENT01.V_EVENT_STATUS_CD != 'SD005'
+            <if test="grId != null and grId !=''"> <!-- 장비그룹 -->
+                AND EVENT01.V_GR_ID = #{grId}
+            </if>
+            <if test="eventLvl != null and eventLvl !=''"> <!-- 수위 -->
+                AND EVENT01.V_EVENT_LVL =  #{eventLvl}
+            </if>
+        ) AS E
+        LEFT OUTER JOIN NST_DEVICE_INFO D
+        ON D.V_SITE_ID = E.V_SITE_ID
+        AND D.V_DEVICE_ID = E.V_DEVICE_ID
+        LEFT OUTER JOIN NST_CD_DETAIL CD
+        ON CD.V_MASTER_CD = 'SM010'
+        AND CD.V_DETAIL_CD = E.V_EVENT_LVL
+        LEFT OUTER JOIN NST_CD_DETAIL CD2
+        ON CD2.V_MASTER_CD = 'SM049'
+        AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
+        <where>
+            <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
+                AND E.V_EVENT_STATUS_CD =  #{eventStatusCd}
+            </if>
+        </where>
+        <include refid="pagingMapper.afterPaging" />
+    </select>
+
+    <select id="getEventStatusTableCnt" resultType="int"
+            parameterType="map">
+        /* OperationMapper.getEventStatusTableCnt */
+        SELECT COUNT(*)
+        FROM (
+            SELECT EVENT01.V_SITE_ID
+                , EVENT01.N_EVENT_SEQ
+                , EVENT01.V_START_TIME
+                , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_END_TIME, EVENT01.V_END_TIME) AS V_END_TIME
+                , EVENT01.V_DEVICE_ID
+                , EVENT01.V_EVENT_LVL
+                , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_EVENT_STATUS_CD, EVENT01.V_EVENT_STATUS_CD) AS V_EVENT_STATUS_CD
+                , EVENT01.V_EVENT_NM
+                , EVENT01.V_EVENT_DESC
+            FROM NHT_EVENT AS EVENT01
+            LEFT JOIN (
+                SELECT V_DEVICE_ID, V_START_TIME, V_END_TIME, V_EVENT_STATUS_CD, V_EVENT_NM
+                FROM NHT_EVENT
+                WHERE V_EVENT_STATUS_CD = 'SD005'
+                AND V_END_TIME != ''
+                AND V_END_TIME IS NOT NULL
+            ) AS EVENT02
+            ON EVENT01.V_DEVICE_ID = EVENT02.V_DEVICE_ID
+            AND EVENT01.V_START_TIME = EVENT02.V_START_TIME
+            AND EVENT01.V_EVENT_NM = EVENT02.V_EVENT_NM
+            WHERE EVENT01.V_START_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'),'%')
+            <if test="grId != null and grId !=''"> <!-- 장비그룹 -->
+                AND EVENT01.V_GR_ID = #{grId}
+            </if>
+            <if test="eventLvl != null and eventLvl !=''"> <!-- 수위 -->
+                AND EVENT01.V_EVENT_LVL =  #{eventLvl}
+            </if>
+        ) AS E
+        <where>
+            <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
+                AND E.V_EVENT_STATUS_CD =  #{eventStatusCd}
+            </if>
+        </where>
+    </select>
+</mapper>

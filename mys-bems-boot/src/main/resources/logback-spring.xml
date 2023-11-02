@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 60초마다 설정 파일의 변경을 확인 하여 변경시 갱신 -->
+<configuration scan="true" scanPeriod="60 seconds">
+
+	<!--springProfile 태그를 사용하면 logback 설정파일에서 복수개의 프로파일을 설정할 수 있다. -->
+	<!--    <springProfile name="local">-->
+	<!--        <property resource="logback-local.properties" />-->
+	<!--    </springProfile>-->
+	<!--    <springProfile name="dev">-->
+	<!--        <property resource="logback-dev.properties" />-->
+	<!--    </springProfile>-->
+
+	<springProperty scope="context" name="LOG_LEVEL" source="logging.level.root" />
+	<springProperty scope="context" name="LOG_BASE_PATH" source="logging.base.path" />
+	<springProperty scope="context" name="LOG_PATTERN" source="logging.pattern" />
+	<springProperty scope="context" name="LOG_FILE_NAME" source="logging.file.name" />
+	<springProperty scope="context" name="LOG_MAX_FILE_SIZE" source="logging.file.maxsize" />
+	<springProperty scope="context" name="LOG_MAX_FILE_HISTORY" source="logging.file.maxhistory" />
+
+	<!-- Console Appender -->
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>${LOG_PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_BASE_PATH}/${LOG_FILE_NAME}.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_BASE_PATH}/${LOG_FILE_NAME}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<maxHistory>${LOG_MAX_FILE_HISTORY}</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>
+				${LOG_PATTERN}
+			</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="FILE-SQL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_BASE_PATH}/${LOG_FILE_NAME}_sql.log</file>
+		<encoder>
+			<pattern>${LOG_PATTERN}</pattern>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_BASE_PATH}/${LOG_FILE_NAME}_sql-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<maxHistory>${LOG_MAX_FILE_HISTORY}</maxHistory>
+		</rollingPolicy>
+	</appender>
+
+	<!-- mapper sql-->
+	<logger name="com.nuri.mys.bems.device.${LOG_FILE_NAME}.store" level="${LOG_LEVEL}">
+		<appender-ref ref="FILE-SQL"></appender-ref>
+	</logger>
+
+	<root level="${LOG_LEVEL}">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="FILE" />
+	</root>
+
+	<root level="error">
+		<appender-ref ref="CONSOLE" />
+	</root>
+</configuration>

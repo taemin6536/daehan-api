@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nuri.mys.bems.store.common.LoginMapper">
+    <select id="getSystemSettingForLogin" parameterType="String" resultType="com.nuri.mys.bems.domain.entity.common.LoginSystemSettingForLoginRes">
+        /* loginMapper.getSystemSettingForLogin */
+        SELECT
+            SITE.V_SITE_ID as siteId, SITE.V_SITE_NM as siteNm
+            , V_PROPER_TYPE as vProperType, V_KEY as vKey, V_VALUE as vValue
+        FROM NST_SYSTEM_SETTING SYS
+        LEFT JOIN NST_SITE_INFO SITE
+        ON SITE.V_SITE_ID = SYS.V_SITE_ID
+        WHERE V_PROPER_TYPE = #{prType}
+    </select>
+
+    <select id="getSystemSetting" resultType="com.nuri.mys.bems.domain.entity.common.LoginSystemSettingRes">
+        /* loginMapper.getSystemSetting */
+        SELECT
+                a.V_SITE_ID AS siteId, a.V_SITE_NM as siteNm, a.V_VALUE AS useLoginFailCntYN, b.V_VALUE AS loginFailCntLimit
+                , c.V_VALUE AS useLoginSMSYN, d.V_VALUE AS systemName, e.V_VALUE AS systemNameDesc
+                , f.V_VALUE AS useLoginSmsFailCntYN, g.V_VALUE AS useLoginEMAILYN
+        FROM
+            (SELECT S.V_SITE_ID, V_SITE_NM, V_VALUE FROM NST_SYSTEM_SETTING S
+            LEFT JOIN NST_SITE_INFO SITE ON SITE.V_SITE_ID = S.V_SITE_ID WHERE V_KEY = 'useLoginFailCntYN') AS a,
+            (SELECT V_VALUE FROM NST_SYSTEM_SETTING WHERE V_KEY = 'loginFailCntLimit') AS b,
+            (SELECT V_VALUE FROM NST_SYSTEM_SETTING WHERE V_KEY = 'useLoginSMSYN') AS c,
+            (SELECT V_VALUE FROM NST_SYSTEM_SETTING WHERE V_KEY = 'systemName') AS d,
+            (SELECT V_VALUE FROM NST_SYSTEM_SETTING WHERE V_KEY = 'systemNameDesc') AS e,
+            (SELECT V_VALUE FROM NST_SYSTEM_SETTING WHERE V_KEY = 'useLoginSmsFailCntYN') AS f,
+            (SELECT V_VALUE FROM NST_SYSTEM_SETTING WHERE V_KEY = 'useLoginEMAILYN') AS g
+    </select>
+
+    <select id="loginCheck" parameterType="map"
+            resultType="com.nuri.mys.bems.domain.entity.common.LoginUserRes">
+        /* loginMapper.loginCheck */
+        SELECT
+            V_USER_ID as userId, V_PASS_NO as password, V_EMAIL as email,
+            V_MOBILE_NO as mobileNo, N_SMS_NO as smsCode,
+            V_PERM_GR_ID as role, V_TEMP_PASS_YN as tempPassYn, V_PAST_PASS_NO_1 AS pastPassNo1,
+            T_PASS_UPDATE_DT as passUpdateDt, N_LOGIN_FAIL_CNT as loginFailCnt
+        FROM NST_USER_INFO
+        WHERE BINARY V_USER_ID = #{userId}
+    </select>
+
+    <select id="getUserLockInfo" resultType="com.nuri.mys.bems.domain.jwt.entity.UserInfoRes"
+            parameterType="map" >
+        /* loginMapper.getUserLockInfo */
+        SELECT V_USER_ID, V_USER_NM, V_ACCOUNT_STATE
+        FROM NST_USER_LOCK_INFO
+        WHERE V_USER_ID = #{userId}
+    </select>
+
+    <update id="saveUserLockInfo" parameterType="map">
+        /* loginMapper.saveUserLockInfo */
+        UPDATE NST_USER_LOCK_INFO
+        SET T_UPDATE_DT = now()
+          , V_UPDATE_ID = #{userId}
+          , V_ACCOUNT_STATE = 'L'
+        WHERE V_USER_ID = #{userId}
+    </update>
+
+    <select id="getUserInfo" parameterType="map" resultType="com.nuri.mys.bems.domain.jwt.entity.UserInfoRes">
+        /* loginMapper.getUserInfo */
+        SELECT
+            N_USER_SEQ as nUserSeq,V_USER_ID as vUserId,V_USER_NM as vUserNm,V_USER_ENG_NM as vUserEngNm,
+            V_PERM_GR_ID as vPermGrId,V_PERM_GR_NM as vPermGrNm,
+            V_PHONE_NO as vPhoneNo,V_MOBILE_NO as vMobileNo,N_LOGIN_FAIL_CNT as nLoginFailCnt,
+            T_PASS_UPDATE_DT as tPassUpdateDt,V_TEMP_PASS_YN as vTempPassYn,V_SMS_REC_YN as vSmsRecYn,V_WEB_SHOW_YN as vWebShowYn,
+            N_SMS_NO as nSmsNo,T_CREATE_DT as tCreateDt,T_UPDATE_DT as tUpdateDt,V_CREATE_ID as vCreateId,
+            V_UPDATE_ID as vUpdateId
+        FROM NST_USER_INFO
+        WHERE V_USER_ID = #{vUserId}
+    </select>
+
+    <insert id="saveUserHistory" parameterType="map">
+        /* loginMapper.saveUserHistory */
+        INSERT INTO NHT_USER_INFO
+        (
+            V_USER_ID, V_USER_NM, V_PERM_GR_ID, V_PERM_GR_NM
+            , V_CHANGE_DIV, V_CHANGE_DESC
+            , T_CREATE_DT, T_UPDATE_DT, V_CREATE_ID, V_UPDATE_ID
+        )
+        VALUES
+            (
+                #{vUserId}, #{vUserNm}, #{vPermGrId}, #{vPermGrNm}
+                ,#{vChangeDiv}, #{vChangeDesc}
+                , now(), now(), #{vUserId}, #{vUserId}
+            )
+    </insert>
+
+    <update id="updateLoginFailCnt" parameterType="map">
+        /* loginMapper.updateLoginFailCnt */
+        UPDATE NST_USER_INFO
+        SET N_LOGIN_FAIL_CNT = #{loginFailCnt}
+        WHERE V_USER_ID = #{userId}
+    </update>
+
+    <insert id="saveLoginLog" parameterType="map">
+        /* loginMapper.saveLoginLog */
+        INSERT INTO NHT_LOGIN
+        (
+            V_USER_ID, V_USER_NM, V_PERM_GR_ID, V_PERM_GR_NM, V_LOGIN_IP, T_LOGIN_DT, V_DEVICE_GB
+        , V_LOGIN_GB, V_LOGIN_RLT_CD, V_LOGIN_RLT_DESC, T_CREATE_DT, T_UPDATE_DT, V_CREATE_ID, V_UPDATE_ID
+        )
+        VALUES
+            (
+                #{vUserId}, #{vUserNm}, #{vPermGrId}, #{vPermGrNm}, #{vLoginIp}, now(), #{vDeviceGb}
+            , #{vLoginGb}, #{vLoginRltCd}, #{vLoginRltDesc}, now(), now(), #{vCreateId}, #{vUpdateId}
+            )
+    </insert>
+
+    <update id="saveSmsCode" parameterType="com.nuri.mys.bems.domain.entity.common.LoginUserRes">
+        /* loginMapper.updateSmsCode */
+        UPDATE NST_USER_INFO
+        SET N_SMS_NO = #{smsCode}
+        WHERE V_USER_ID = #{userId}
+    </update>
+
+    <select id="getSiteInfo" resultType="com.nuri.mys.bems.domain.entity.common.SiteInfoRes"
+            parameterType="map" >
+        /* loginMapper.getSiteInfo */
+<!--        SELECT-->
+        <!--V_SITE_ID as vSiteId, V_VIEW_YN as vViewYn,
+        V_OPER_YN as vOperYn, V_MNG_YN as vMngYn,
+        V_ENERGY_TYPE as vEnergyType, V_ENERGY_NM as vEnergyNm,
+        V_SITE_NM as vSiteNm-->
+<!--        V_ENERGY_TYPE as vEnergyType, V_ENERGY_NM as vEnergyNm-->
+<!--        FROM    NST_USER_SITE_PERM PERM-->
+<!--        INNER JOIN NST_CD_DETAIL CODE-->
+<!--        ON PERM.V_ENERGY_TYPE = CODE.V_DETAIL_CD AND CODE.V_MASTER_CD = 'SM004'-->
+<!--        WHERE   V_USER_ID = #{userId}-->
+<!--        GROUP BY V_ENERGY_TYPE, V_ENERGY_NM-->
+<!--        ORDER BY CODE.N_CD_ORD-->
+        SELECT
+            V_ENERGY_TYPE as vEnergyType, V_ENERGY_NM as vEnergyNm
+        FROM NST_SITE_INFO
+    </select>
+
+    <select id="getUserRole" parameterType="map" resultType="com.nuri.mys.bems.domain.entity.common.LoginUserInfoRes">
+        /* loginMapper.LoginUserInfoRes */
+        SELECT V_USER_ID AS userId, V_PERM_GR_ID AS permId, V_PERM_GR_NM AS role
+        FROM NST_USER_INFO
+        WHERE V_USER_ID = #{userId}
+    </select>
+</mapper>
