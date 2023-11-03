@@ -39,7 +39,7 @@ jar_build:
   artifacts:
     expire_in: 1 week
     paths:
-      - /builds/mys-bems/mys-bems-boot/target/*.jar
+      - /builds/${CI_PROJECT_PATH}/mys-bems-boot/target/*.jar
   only:
     - master
 
