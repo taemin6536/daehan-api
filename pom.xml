@@ -192,7 +192,7 @@
                 <version>${boot.version}</version>
                 <configuration>
                     <classifier>spring-boot</classifier>
-                    <mainClass>PmsApp</mainClass>
+                    <mainClass>com.nuri.mys.bems.BemsApp</mainClass>
                 </configuration>
                 <executions>
                     <execution>
