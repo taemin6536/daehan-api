@@ -1,8 +1,7 @@
 FROM openjdk:8-jdk
 
-ARG PR_PROJECT_TARGET_NAME="${PR_PROJECT_TARGET_NAME}"
 ENV TZ=Asia/Seoul
 
-COPY ${PR_PROJECT_TARGET_NAME} app.jar
+COPY ./mys-bems-boot/target/mys-bems-boot-1.0.0-spring-boot.jar app.jar
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
