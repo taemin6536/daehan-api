@@ -1,0 +1,80 @@
+variables:
+  PROJECT: "${CI_PROJECT_NAME}"
+
+  # registry info
+  REG_LOGIN_USER: '${CI_REGISTRY_USER}'
+  REG_LOGIN_PWD: '${CI_REGISTRY_PASSWORD}'
+  REG_REGISTRY_BASE: '${CI_REGISTRY}/${CI_PROJECT_NAME}'
+
+  PR_PROJECT_BOOT_NAME: "${CI_PROJECT_NAME}-boot"
+  PR_PROJECT_TARGET_NAME: "${CI_PROJECT_NAME}-boot/target/${CI_PROJECT_NAME}-boot-1.0.0-spring-boot.jar"
+
+  IMAGE_TAG: 'latest'
+
+  SERVER_IP: '172.16.10.143'
+  SERVER_PORT: '3751'
+  SERVER_USER: 'ems'
+
+  SHELLSCRIPT_PATH: '/data1/ems/mabems/bin/_run_be.sh'
+  CONTAINER_NAME: 'mabems-be'
+
+stages:
+  - build_jar
+  - docker_build
+  - deploy
+
+jar_build:
+  image: maven:3.6.3-openjdk-8
+  cache:
+    paths:
+      - .m2/repository
+  stage: build_jar
+  script:
+    - env
+    - pwd
+    - mvn -f pom.xml package
+  after_script:
+    - pwd
+    - ls -alhF
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - /builds/mys-bems/mys-bems-boot/target/*.jar
+  only:
+    - master
+
+docker_build:
+  stage: docker_build
+  image: docker:latest
+  script:
+    - echo "- docker login -u '${REG_LOGIN_USER}' -p '${REG_LOGIN_PWD}' '${CI_REGISTRY}'"
+    - docker login -u "${REG_LOGIN_USER}" -p "${REG_LOGIN_PWD}" "${CI_REGISTRY}"
+    - docker build -t "${REG_REGISTRY_BASE}:${IMAGE_TAG}" .
+    - docker push "${REG_REGISTRY_BASE}:${IMAGE_TAG}"
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  before_script:
+    - echo "+ before script start..."
+    - apk update
+    # ssh-agent가 시스템에 설치되어 있는지 확인하고 없으면 openssh를 설치한다.
+    - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
+    # ssh-agent를 시작하고, 그것에 의해 생성된 환경 변수 설정을 현재 쉘 세션에 적용
+    - eval $(ssh-agent -s)
+    # SSH_KEY 읽고 \r 제거 후 ssh 에이전트에 추가
+    - echo "$SSH_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "+ before script end..."
+  script:
+    - echo "Deploying ${PROJECT} / ${IMAGE_TAG} / ${SERVER_IP}"
+    # 환경변수 설정, 도커 로그인, 배포 스크립트 실행 명령어를 CMD 변수에 담는다.
+    # 쉘 인수 1. 프로젝트 이름 2. 이미지 태그 3. 컨테이너 이름 4. 컨테이너 외부 포트 5. 컨테이너 내부 포트
+    - CMD="
+      docker login -u $REG_LOGIN_USER -p $REG_LOGIN_PWD $CI_REGISTRY;
+      $SHELLSCRIPT_PATH $PROJECT $IMAGE_TAG $CONTAINER_NAME '30037' '8081'"
+    # CMD 변수에 담긴 명령어는 ssh 접속 후 해당 서버에서 실행됨
+    - echo ${CMD} | ssh -T -o StrictHostKeyChecking=no -p ${SERVER_PORT} ${SERVER_USER}@${SERVER_IP}
+    - echo "Service is restarted."
