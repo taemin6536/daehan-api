@@ -74,7 +74,7 @@ deploy:
     # 쉘 인수 1. 프로젝트 이름 2. 이미지 태그 3. 컨테이너 이름 4. 컨테이너 외부 포트 5. 컨테이너 내부 포트
     - CMD="
       docker login -u $REG_LOGIN_USER -p $REG_LOGIN_PWD $CI_REGISTRY;
-      $SHELLSCRIPT_PATH $PROJECT $IMAGE_TAG $CONTAINER_NAME '30037' '8081'"
+      $SHELLSCRIPT_PATH $PROJECT $IMAGE_TAG $CONTAINER_NAME '30040' '8081'"
     # CMD 변수에 담긴 명령어는 ssh 접속 후 해당 서버에서 실행됨
     - echo ${CMD} | ssh -T -o StrictHostKeyChecking=no -p ${SERVER_PORT} ${SERVER_USER}@${SERVER_IP}
     - echo "Service is restarted."
