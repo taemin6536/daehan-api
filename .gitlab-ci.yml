@@ -9,11 +9,11 @@ variables:
   PR_PROJECT_BOOT_NAME: "${CI_PROJECT_NAME}-boot"
   PR_PROJECT_TARGET_NAME: "${CI_PROJECT_NAME}-boot/target/${CI_PROJECT_NAME}-boot-1.0.0-spring-boot.jar"
 
-  IMAGE_TAG: 'latest'
+  IMAGE_TAG: ${CI_PIPELINE_ID}
 
-  SERVER_IP: '172.16.10.143'
-  SERVER_PORT: '3751'
-  SERVER_USER: 'ems'
+  DEV_SERVER_IP: '172.16.10.143'
+  DEV_SERVER_PORT: '3751'
+  DEV_SERVER_USER: 'ems'
 
   SHELLSCRIPT_PATH: '/data1/ems/mabems/bin/_run_be.sh'
   CONTAINER_NAME: 'mabems-be'
@@ -42,6 +42,7 @@ jar_build:
       - /builds/${CI_PROJECT_PATH}/mys-bems-boot/target/*.jar
   only:
     - master
+    - develop
 
 docker_build:
   stage: docker_build
@@ -50,12 +51,15 @@ docker_build:
     - echo "- docker login -u '${REG_LOGIN_USER}' -p '${REG_LOGIN_PWD}' '${CI_REGISTRY}'"
     - docker login -u "${REG_LOGIN_USER}" -p "${REG_LOGIN_PWD}" "${CI_REGISTRY}"
     - docker build -t "${REG_REGISTRY_BASE}:${IMAGE_TAG}" .
+    - docker push "${REG_REGISTRY_BASE}:latest"
     - docker push "${REG_REGISTRY_BASE}:${IMAGE_TAG}"
   only:
     - master
+    - develop
 
-deploy:
+dev_deploy:
   stage: deploy
+  when: manual
   before_script:
     - echo "+ before script start..."
     - apk update
@@ -69,12 +73,12 @@ deploy:
     - chmod 700 ~/.ssh
     - echo "+ before script end..."
   script:
-    - echo "Deploying ${PROJECT} / ${IMAGE_TAG} / ${SERVER_IP}"
+    - echo "Deploying ${PROJECT} / ${IMAGE_TAG} / ${DEV_SERVER_IP}"
     # 환경변수 설정, 도커 로그인, 배포 스크립트 실행 명령어를 CMD 변수에 담는다.
     # 쉘 인수 1. 프로젝트 이름 2. 이미지 태그 3. 컨테이너 이름 4. 컨테이너 외부 포트 5. 컨테이너 내부 포트
     - CMD="
       docker login -u $REG_LOGIN_USER -p $REG_LOGIN_PWD $CI_REGISTRY;
       $SHELLSCRIPT_PATH $PROJECT $IMAGE_TAG $CONTAINER_NAME '30037' '8081'"
     # CMD 변수에 담긴 명령어는 ssh 접속 후 해당 서버에서 실행됨
-    - echo ${CMD} | ssh -T -o StrictHostKeyChecking=no -p ${SERVER_PORT} ${SERVER_USER}@${SERVER_IP}
+    - echo ${CMD} | ssh -T -o StrictHostKeyChecking=no -p ${DEV_SERVER_PORT} ${DEV_SERVER_USER}@${DEV_SERVER_IP}
     - echo "Service is restarted."
