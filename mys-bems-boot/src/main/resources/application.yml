@@ -75,7 +75,7 @@ springdoc:
 ---
 spring:
   activemq:
-    broker-url: tcp://172.16.10.143:16001?trace=false&soTimeout=60000
+    broker-url: tcp://172.16.10.143:16011?trace=false&soTimeout=60000
 ---
 spring:
   interface:
