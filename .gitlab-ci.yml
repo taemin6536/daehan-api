@@ -46,6 +46,7 @@ jar_build:
 
 docker_build:
   stage: docker_build
+  env:
   image: docker:latest
   script:
     - echo "- docker login -u '${REG_LOGIN_USER}' -p '${REG_LOGIN_PWD}' '${CI_REGISTRY}'"
