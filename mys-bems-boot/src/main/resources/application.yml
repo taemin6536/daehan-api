@@ -7,7 +7,7 @@ spring:
   datasource:
     hikari:
       dirver-class-name: org.mariadb.jdbc.Driver
-      jdbc-urlurl: jdbc:mariadb://${DB_URL}/pv_ess
+      jdbc-url: jdbc:mariadb://${DB_URL}/pv_ess
       username: ${DB_USERNAME}
       password: ${DB_PASSWORD}
     #      jdbc-url: jdbc:mariadb://172.16.10.143:13007/pv_ess
