@@ -2,6 +2,8 @@ FROM openjdk:8-jdk
 
 ENV TZ=Asia/Seoul
 
-COPY ./mys-bems-boot/target/mys-bems-boot-1.0.0-spring-boot.jar app.jar
+WORKDIR /usr/src/app
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY ./mys-bems-boot/target/mys-bems-boot-1.0.0-spring-boot.jar /usr/src/app
+
+ENTRYPOINT ["java", "-jar", "mys-bems-boot-1.0.0-spring-boot.jar"]
