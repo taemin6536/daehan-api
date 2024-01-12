@@ -211,4 +211,12 @@
         ) AS DATA
         GROUP BY time
     </select>
+
+    <select id="getPvsWeatherInfo" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardWeatherDataRes">
+        /* DashboardMapper.getPvsWeatherInfo */
+        SELECT D_PERIOD_HORI_SOLAR AS horiRadiation, D_PERIOD_SLOP_SOLAR AS inclRadiation
+            , D_TEMP AS temp, D_HUMIDITY AS humidity
+        FROM NRT_PVS_DAILY_STAT
+        WHERE V_TIME = DATE_FORMAT(NOW(), '%Y%m%d')
+    </select>
 </mapper>

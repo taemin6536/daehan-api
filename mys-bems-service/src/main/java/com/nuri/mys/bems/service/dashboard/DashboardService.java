@@ -45,6 +45,7 @@ public class DashboardService implements DashboardLogic {
     public DashboardWeatherDataRes getWeatherData(){
         DashboardWeatherDataRes result1 = new DashboardWeatherDataRes(); // 일출 일몰 정보
         DashboardWeatherDataRes result = dashboardStore.getWeatherInfo(); // 날씨 정보
+        DashboardWeatherDataRes pvsInfo = dashboardStore.getPvsWeatherInfo(); //기상정보
 
         result = result != null ? result : new DashboardWeatherDataRes();
 
@@ -53,6 +54,13 @@ public class DashboardService implements DashboardLogic {
 //            sunset = new Sunset().operation(); // new로 객체를 생성해서 쓰면 그 객체는 Spring Container가 관리하는게 아니어서 @Autowired를 통한 의존성 주입이 불가
             result.setRiseTime(result1.getRiseTime());
             result.setSetTime(result1.getSetTime());
+
+            if(pvsInfo != null) {
+                result.setTemp(pvsInfo.getTemp());
+                result.setHumidity(pvsInfo.getHumidity());
+                result.setHoriRadiation(pvsInfo.getHoriRadiation());
+                result.setInclRadiation(pvsInfo.getInclRadiation());
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

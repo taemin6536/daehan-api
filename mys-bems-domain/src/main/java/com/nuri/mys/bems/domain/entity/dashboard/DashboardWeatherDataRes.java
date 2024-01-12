@@ -13,9 +13,13 @@ public class DashboardWeatherDataRes {
     @Schema(description = "아이콘")
     private String icon;
     @Schema(description="온도")
-    private int temp;
+    private double temp;
     @Schema(description="습도")
-    private int humidity;
+    private double humidity;
+    @Schema(description="수평 일사량")
+    private double horiRadiation;
+    @Schema(description="경사 일사량")
+    private double inclRadiation;
     @Schema(description="기압")
     private int pressure;
     @Schema(description="풍향")
@@ -59,20 +63,36 @@ public class DashboardWeatherDataRes {
         this.icon = icon;
     }
 
-    public int getTemp() {
+    public double getTemp() {
         return temp;
     }
 
-    public void setTemp(int temp) {
+    public void setTemp(double temp) {
         this.temp = temp;
     }
 
-    public int getHumidity() {
+    public double getHumidity() {
         return humidity;
     }
 
-    public void setHumidity(int humidity) {
+    public void setHumidity(double humidity) {
         this.humidity = humidity;
+    }
+
+    public double getHoriRadiation() {
+        return horiRadiation;
+    }
+
+    public void setHoriRadiation(double horiRadiation) {
+        this.horiRadiation = horiRadiation;
+    }
+
+    public double getInclRadiation() {
+        return inclRadiation;
+    }
+
+    public void setInclRadiation(double inclRadiation) {
+        this.inclRadiation = inclRadiation;
     }
 
     public int getPressure() {
