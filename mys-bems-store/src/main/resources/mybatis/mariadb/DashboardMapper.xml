@@ -138,7 +138,7 @@
 
     <select id="getWeatherInfo" resultType="com.nuri.mys.bems.domain.entity.dashboard.DashboardWeatherDataRes">
         /* DashboardMapper.getWeatherInfo */
-        SELECT IFNULL(D.V_HAN_DESCRIPTION, W.V_DESCRIPTION)  AS weatherDesc, V_ICON AS icon
+        SELECT IFNULL(D.V_ENG_DESCRIPTION, W.V_DESCRIPTION)  AS weatherDesc, V_ICON AS icon
             , D_TEMP AS temp, D_HUMIDITY AS humidity, D_WIND_SPEED AS windSpeed, V_DIRE_ENG_DESC AS windDirection
         FROM NST_GLOBAL_WEATHER AS W
         LEFT JOIN NST_WEATHER_WIND_DIRECTION AS WD
