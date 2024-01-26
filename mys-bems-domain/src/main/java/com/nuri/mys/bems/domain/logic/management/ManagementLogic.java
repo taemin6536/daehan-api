@@ -3,7 +3,6 @@ package com.nuri.mys.bems.domain.logic.management;
 import com.nuri.mys.bems.domain.entity.common.CommonCodeRes;
 import com.nuri.mys.bems.domain.entity.common.CommonResultRes;
 import com.nuri.mys.bems.domain.entity.management.*;
-import com.nuri.mys.bems.domain.entity.management.*;
 
 import java.util.List;
 
@@ -51,4 +50,8 @@ public interface ManagementLogic {
     CommonResultRes saveHolidayData(ManagementSaveHolidayDataDto params);
 
     CommonResultRes deleteHolidayData(ManagementDeleteHolidayDataDto params);
+
+    CommonResultRes saveLegalHoliday(List<ManagementSaveLegalHolidayDto> params);
+
+    List<ManagementLegalHolidayTableRes> getLegalHoliday(ManagementLegalHolidayTableDto params);
 }

@@ -561,45 +561,11 @@
         WHERE N_SCH_SEQ = #{schSeq[0]}
     </select>
 
-    <select id="getHolidayData" parameterType="map"
-            resultType="com.nuri.mys.bems.domain.entity.management.HolidayRes">
-        /* managementMapper.getHolidayData */
-        SELECT time, holidayDesc AS holidDesc
-        FROM (
-            SELECT
-                CONCAT(#{year},
-                    RIGHT(REPLACE(IF(HOLIDAY IS NULL,
-                            (SELECT
-                                DATE_ADD(SOLA, INTERVAL - 1 DAY)
-                                FROM
-                                    NST_SOLATOLUNAR
-                                WHERE
-                                    LUNAR = CONCAT(#{year}, '-01-01')),
-                            HOLIDAY),
-                        '-',
-                        ''),
-                    4)) AS time,
-                holidayDesc
-            FROM
-                (SELECT
-                    IF(LASTHOLIDAY IS NOT NULL, (SELECT
-                                SOLA
-                            FROM
-                                NST_SOLATOLUNAR
-                            WHERE
-                                LUNAR = CONCAT(#{year}, '-', HOLIDAY)), HOLIDAY) AS HOLIDAY,
-                        holidayDesc
-                    FROM
-                        NST_HOLIDAY_INFO) AS A
-        ) AS A
-        WHERE A.TIME LIKE CONCAT(#{year}, #{month}, '%')
-    </select>
-
     <select id="getClosedDayData" parameterType="map"
             resultType="com.nuri.mys.bems.domain.entity.management.ClosedDayRes">
         /* managementMapper.getClosedDayData */
         SELECT V_SITE_ID siteId, V_TIME_DD time
-            , N_WEEK_CD weekCd
+            , N_WEEK_CD weekCd, V_LEGAL_HOLID_YN AS legalHolidYn, V_HOLID_DESC AS holidDesc
         FROM NST_CHADI_HOLID_INFO AS CH
         WHERE V_SITE_ID = #{siteId}
         AND LEFT(V_TIME_DD, 6) = CONCAT(#{year}, #{month})
@@ -621,14 +587,14 @@
         (
             V_SITE_ID, V_TIME_DD, V_DEVICE_ID
             , V_HOLID_CD, N_WEEK_CD, V_GR_ID, V_USER_ID
-            , V_LEGAL_HOLID_YN, V_CREATE_ID, V_UPDATE_ID
+            , V_LEGAL_HOLID_YN, V_HOLID_DESC, V_CREATE_ID, V_UPDATE_ID
         )
         VALUES
-        <foreach collection="holidayArr" item="day" separator=",">
+        <foreach collection="holidayList" item="holiday" separator=",">
             (
-                #{siteId}, CONCAT(#{day}), #{deviceId}
-                , '1', DAYOFWEEK(#{day}), '100', #{userId}
-                , 'Y', #{userId}, #{userId}
+                #{siteId}, #{holiday.time}, #{deviceId}
+                , '1', DAYOFWEEK(#{holiday.time}), '100', #{userId}
+                , 'Y', #{holiday.holidDesc}, #{userId}, #{userId}
             )
         </foreach>
     </insert>
@@ -659,36 +625,23 @@
         AND V_TIME_DD > #{today}
     </delete>
 
-    <select id="getLegalHolidayData" resultType="String" parameterType="map">
+    <select id="getLegalHolidayData"
+            resultType="com.nuri.mys.bems.domain.entity.management.ClosedDayRes" parameterType="map">
         /* managementMapper.getLegalHolidayData */
-        SELECT TIME
-        FROM (
-            SELECT
-                CONCAT(#{year},
-                        RIGHT(REPLACE(IF(HOLIDAY IS NULL,
-                                    (SELECT
-                                            DATE_ADD(SOLA, INTERVAL - 1 DAY)
-                                        FROM
-                                            NST_SOLATOLUNAR
-                                        WHERE
-                                            LUNAR = CONCAT(#{year}, '-01-01')),
-                                    HOLIDAY),
-                                '-',
-                                ''),
-                            4)) AS time
-            FROM
-                (SELECT
-                    IF(LASTHOLIDAY IS NOT NULL, (SELECT
-                                SOLA
-                            FROM
-                                NST_SOLATOLUNAR
-                            WHERE
-                                LUNAR = CONCAT(#{year}, '-', HOLIDAY)), HOLIDAY) AS HOLIDAY
-                FROM
-                    NST_HOLIDAY_INFO) AS A
-        ) AS A
-        WHERE TIME > #{today}
-        ORDER BY time
+        SELECT time, holidDesc
+          FROM (
+            SELECT REPLACE(IF(V_LUNAR_YN='Y', S.SOLA, CONCAT(#{year}, '-', H.V_HOLIDAY)), '-', '') AS time
+                    , V_HOLIDAY_DESC AS holidDesc
+              FROM NST_HOLIDAY_INFO_NEW AS H
+              LEFT JOIN (
+                    SELECT *
+                    FROM NST_SOLATOLUNAR
+                    WHERE LEFT(SOLA, 4) = #{year}
+              ) AS S
+                ON H.V_HOLIDAY = RIGHT(LUNAR, 5)
+          ) AS A
+         WHERE TIME > #{today}
+         ORDER BY time ASC
     </select>
 
     <delete id="deleteClosedData" parameterType="map">
@@ -703,5 +656,41 @@
             SELECT IF(V_LEGAL_HOLID_YN = 'Y', '1', '0')
             FROM NST_CHADI_HOLID_INFO
             WHERE V_TIME_DD = #{closedDay}
+    </select>
+
+    <delete id="deleteLegalHoliday" parameterType="map">
+        /* managementMapper.deleteLegalHoliday */
+        DELETE
+        FROM NST_HOLIDAY_INFO_NEW
+        WHERE N_HOLIDAY_SEQ >= 0
+    </delete>
+
+    <insert id="insertLegalHoliday" parameterType="map">
+        /* managementMapper.insertLegalHoliday */
+        INSERT INTO NST_HOLIDAY_INFO_NEW
+        (
+            V_HOLIDAY, V_HOLIDAY_DESC, V_LUNAR_YN, T_CREATE_DT, T_UPDATE_DT
+        )
+        VALUES
+        <foreach collection="list" item="holiday" separator=",">
+            (
+                #{holiday.holiday}, #{holiday.holidayDesc}, #{holiday.lunarYn}, NOW(), NOW()
+            )
+        </foreach>
+    </insert>
+
+    <select id="getLegalHolidayTableCnt" parameterType="map" resultType="int">
+        /* managementMapper.getLegalHolidayTable */
+        SELECT COUNT(*)
+        FROM NST_HOLIDAY_INFO_NEW
+    </select>
+
+    <select id="getLegalHolidayTable" parameterType="map" resultType="com.nuri.mys.bems.domain.entity.management.ManagementLegalHolidayTableRes">
+        /* managementMapper.getLegalHolidayTable */
+        <include refid="pagingMapper.prePaging" />
+            SELECT V_HOLIDAY AS holiday, V_HOLIDAY_DESC AS holidayDesc, V_LUNAR_YN AS lunarYn
+                    , T_CREATE_DT AS createDt, T_UPDATE_DT AS updateDt
+              FROM NST_HOLIDAY_INFO_NEW
+        <include refid="pagingMapper.afterPaging" />
     </select>
 </mapper>

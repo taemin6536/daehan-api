@@ -6,7 +6,6 @@ import com.nuri.mys.bems.domain.entity.control.ControlCapacityDto;
 import com.nuri.mys.bems.domain.entity.management.*;
 import com.nuri.mys.bems.domain.entity.ums.UmsModel;
 import com.nuri.mys.bems.domain.entity.control.ControlEssSettingDto;
-import com.nuri.mys.bems.domain.entity.management.*;
 import com.nuri.mys.bems.domain.logic.management.ManagementLogic;
 import com.nuri.mys.bems.domain.store.common.CommonStore;
 import com.nuri.mys.bems.domain.store.common.LoginStore;
@@ -37,6 +36,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ManagementService implements ManagementLogic {
@@ -802,12 +802,11 @@ public class ManagementService implements ManagementLogic {
     @Override
     public ManagementHolidayDataRes getHolidayData(ManagementHolidayDataDto params) {
         int count = managementStore.getYearHolidayCnt(params);
-        List<HolidayRes> result01 = managementStore.getHolidayData(params);
         List<ClosedDayRes> result02 = managementStore.getClosedDayData(params);
 
         ManagementHolidayDataRes result = new ManagementHolidayDataRes();
         result.setSiteId(params.getSiteId());
-        result.setHolidayList(result01);
+//        result.setHolidayList(result01);
         result.setClosedList(result02);
         result.setDataTotalCount(count);
 
@@ -855,57 +854,49 @@ public class ManagementService implements ManagementLogic {
 
         Set<String> holidayList = new HashSet<String>();
         Set<String> closedDayList = new HashSet<String>();
+        List<ClosedDayRes> holidayMapList = new ArrayList<ClosedDayRes>();
 
-        if(params.getClosedDayArr() != null && params.getClosedDayArr().length != 0) {
-            closedDayList = new HashSet<String>(Arrays.asList(params.getClosedDayArr()));
+        if(!params.getClosedDay().isEmpty()) {
+            closedDayList.add(params.getClosedDay());
+//            params.getLegalHolidayYn().toUpperCase().equals("Y") ?
+//                    saveL :
 //            holidayList.retainAll(closedDayList);
 //            closedDayList.removeAll(holidayList);
 //            int delStatus = managementStore.deleteClosedData(params);
         } else {
+            // 해당 년도의 오늘 날짜 이후 운휴일 삭제
             int delStatus = managementStore.deleteHolidayData(params);
-
             LocalDate lastDate = LocalDate.parse(params.getYear() + "-12-31");
+            if(params.getLegalHolidayChk().equals("1")) {
+//                holidayList = managementStore.getLegalHolidayData(params);
+                holidayMapList = managementStore.getLegalHolidayData(params);
+                holidayList = holidayMapList.stream().map(ClosedDayRes::getTime).collect(Collectors.toSet());
+            }
+
+            // 해당 년도의 오늘 날짜 이후 요일별 운휴일 등록
             for (String weekCd : params.getWeekArr()) {
                 System.out.print("nWeekCd :::: " + convertWeekCdCalToLocalDate(weekCd));
                 LocalDate firstDate = getFirstDay(params.getYear(), convertWeekCdCalToLocalDate(weekCd));
                 System.out.println(" //// firstDate :::: " + firstDate.toString());
 
-                if(params.getLegalHolidayChk().equals("1")) {
-                    holidayList = managementStore.getLegalHolidayData(params);
+                while (firstDate.isBefore(lastDate)) {
+                    if (firstDate.isAfter(today)) {
+                        closedDayList.add(firstDate.toString().replaceAll("-", ""));
+                    }
+                    firstDate = firstDate.plusDays(7);
                 }
 
-                if(weekCd.equals("1")) {
-                    while (firstDate.isBefore(lastDate)) {
-                        if (firstDate.isAfter(today)) {
-                            holidayList.add(firstDate.toString().replaceAll("-", ""));
-                        }
-                        firstDate = firstDate.plusDays(7);
-                    }
-
-                    if (firstDate.isEqual(lastDate)) {
-                        if (firstDate.isAfter(today)) {
-                            holidayList.add(firstDate.toString().replaceAll("-", ""));
-                        }
-                    }
-                } else {
-                    while (firstDate.isBefore(lastDate)) {
-                        if (firstDate.isAfter(today)) {
-                            closedDayList.add(firstDate.toString().replaceAll("-", ""));
-                        }
-                        firstDate = firstDate.plusDays(7);
-                    }
-
-                    if (firstDate.isEqual(lastDate)) {
-                        if (firstDate.isAfter(today)) {
-                            closedDayList.add(firstDate.toString().replaceAll("-", ""));
-                        }
+                if (firstDate.isEqual(lastDate)) {
+                    if (firstDate.isAfter(today)) {
+                        closedDayList.add(firstDate.toString().replaceAll("-", ""));
                     }
                 }
             }
             closedDayList.removeAll(holidayList);
         }
+
         params.setClosedDayArr(closedDayList.toArray(new String[0]));
-        params.setHolidayArr(holidayList.toArray(new String[0]));
+        params.setHolidayList(holidayMapList);
 
         if(params.getClosedDayArr() != null && params.getClosedDayArr().length > 0) {
             int saveStatus01 = managementStore.saveClosedData(params);
@@ -919,7 +910,7 @@ public class ManagementService implements ManagementLogic {
                 params.setDay(params.getClosedDayArr()[0]);
             }
         }
-        if(params.getHolidayArr() != null && params.getHolidayArr().length > 0) {
+        if(holidayMapList != null && holidayMapList.size() > 0) {
             int saveStatus = managementStore.saveHolidayData(params);
             if(saveStatus == 0) {
                 result.setStatus(commonStore.getMessageStatusCode("FAIL"));
@@ -928,7 +919,7 @@ public class ManagementService implements ManagementLogic {
                 return result;
             } else {
                 params.setHolidayCd("1");
-                params.setDay(params.getHolidayArr()[0]);
+                params.setDay(params.getHolidayList().get(0).getTime());
             }
         }
         controlService.sendHoliday(params);
@@ -952,6 +943,34 @@ public class ManagementService implements ManagementLogic {
         controlService.sendHoliday(params);
         result.setStatus(commonStore.getMessageStatusCode("SESS"));
         result.setPopContents(getSessMessage());
+        return result;
+    }
+
+    @Override
+    public CommonResultRes saveLegalHoliday(List<ManagementSaveLegalHolidayDto> params) {
+        CommonResultRes result = new CommonResultRes();
+        managementStore.deleteLegalHoliday();
+        int i = managementStore.insertLegalHoliday(params);
+        if(i == 0) {
+            result.setStatus(commonStore.getMessageStatusCode("FAIL"));
+            code = commonStore.getMessageStatusCodeNew("NOT_EXIST_DELETE_DATA");
+            result.setFailContents(code.getCdHanNm());
+            return result;
+        }
+        result.setStatus(commonStore.getMessageStatusCode("SESS"));
+        result.setPopContents(getSessMessage());
+        return result;
+    }
+
+    @Override
+    public List<ManagementLegalHolidayTableRes> getLegalHoliday(ManagementLegalHolidayTableDto params) {
+        PagingParamService.setPagingParam(params);
+        int cnt = managementStore.getLegalHolidayTableCnt(params);
+        List<ManagementLegalHolidayTableRes> result = new ArrayList<ManagementLegalHolidayTableRes>();
+        result = managementStore.getLegalHolidayTable(params);
+        if(result.size() > 0){
+            result.get(0).setDataTotalCount(cnt);
+        }
         return result;
     }
 

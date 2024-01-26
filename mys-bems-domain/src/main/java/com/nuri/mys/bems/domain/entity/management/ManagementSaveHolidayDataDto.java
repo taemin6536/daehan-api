@@ -2,6 +2,8 @@ package com.nuri.mys.bems.domain.entity.management;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
+
 /**
  * @author jmlee
  */
@@ -17,8 +19,12 @@ public class ManagementSaveHolidayDataDto extends ManagementHolidayCommonDto{
     private String[] weekArr;
     @Schema(description="지정 운휴 일자 배열(오늘 날짜 이후로 등록할 모든 운휴일)", example="[20230710, 20230711]")
     private String[] closedDayArr;
+    @Schema(description="지정 운휴 일자", example="20240131")
+    private String closedDay;
+    @Schema(description="법정공휴일 지정 여부", example="N")
+    private String legalHolidayYn;
     @Schema(description="공휴일 배열", hidden=true)
-    private String[] holidayArr;
+    private List<ClosedDayRes> holidayList;
     @Schema(description="오늘 날짜", hidden=true)
     private String today;
 
@@ -63,12 +69,28 @@ public class ManagementSaveHolidayDataDto extends ManagementHolidayCommonDto{
         this.closedDayArr = closedDayArr;
     }
 
-    public String[] getHolidayArr() {
-        return holidayArr;
+    public String getClosedDay() {
+        return closedDay;
     }
 
-    public void setHolidayArr(String[] holidayArr) {
-        this.holidayArr = holidayArr;
+    public void setClosedDay(String closedDay) {
+        this.closedDay = closedDay;
+    }
+
+    public String getLegalHolidayYn() {
+        return legalHolidayYn;
+    }
+
+    public void setLegalHolidayYn(String legalHolidayYn) {
+        this.legalHolidayYn = legalHolidayYn;
+    }
+
+    public List<ClosedDayRes> getHolidayList() {
+        return holidayList;
+    }
+
+    public void setHolidayList(List<ClosedDayRes> holidayList) {
+        this.holidayList = holidayList;
     }
 
     public String getToday() {

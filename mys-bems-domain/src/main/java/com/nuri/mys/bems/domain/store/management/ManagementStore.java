@@ -55,8 +55,6 @@ public interface ManagementStore {
 
     int saveSch(ManagementSchSaveDto params);
 
-    List<HolidayRes> getHolidayData(ManagementHolidayDataDto params);
-
     int getYearHolidayCnt(ManagementHolidayDataDto params);
 
     int deleteSch(ManagementSchCommonDto params);
@@ -67,7 +65,7 @@ public interface ManagementStore {
 
     int deleteHolidayData(ManagementSaveHolidayDataDto params);
 
-    Set<String> getLegalHolidayData(ManagementSaveHolidayDataDto params);
+    List<ClosedDayRes> getLegalHolidayData(ManagementSaveHolidayDataDto params);
 
     int deleteClosedData(ManagementDeleteHolidayDataDto params);
 
@@ -76,4 +74,12 @@ public interface ManagementStore {
     String getHolidayCd(ManagementDeleteHolidayDataDto params);
 
     ManagementSchCommonDto getControlSch(ManagementSchDeleteDto params);
+
+    int deleteLegalHoliday();
+
+    int insertLegalHoliday(List<ManagementSaveLegalHolidayDto> params);
+
+    int getLegalHolidayTableCnt(ManagementLegalHolidayTableDto params);
+
+    List<ManagementLegalHolidayTableRes> getLegalHolidayTable(ManagementLegalHolidayTableDto params);
 }

@@ -5,7 +5,6 @@ import com.nuri.mys.bems.domain.entity.common.CommonResultRes;
 import com.nuri.mys.bems.domain.entity.management.*;
 import com.nuri.mys.bems.domain.logic.management.ManagementLogic;
 import com.nuri.mys.bems.service.common.CommonService;
-import com.nuri.mys.bems.domain.entity.management.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.logging.log4j.LogManager;
@@ -254,5 +253,21 @@ public class ManagementResource {
             @Valid @RequestBody ManagementDeleteHolidayDataDto params) throws ParseException {
         params.setUserId(commonService.getUserId(authentication));
         return managementService.deleteHolidayData(params);
+    }
+
+    @PostMapping("/pms/management/setting/saveLegalHoliday")
+    @Operation(summary = "Management > 운휴 설정 ", description = "공휴일 등록")
+    public CommonResultRes saveLegalHoliday(
+            @ApiIgnore Authentication authentication,
+            @Valid @RequestBody List<ManagementSaveLegalHolidayDto> params) throws ParseException {
+        return managementService.saveLegalHoliday(params);
+    }
+
+    @PostMapping("/pms/management/setting/getLegalHoliday")
+    @Operation(summary = "Management > 운휴 설정 ", description = "공휴일 목록 조회")
+    public List<ManagementLegalHolidayTableRes> getLegalHoliday(
+            @ApiIgnore Authentication authentication,
+            @Valid @RequestBody ManagementLegalHolidayTableDto params) throws ParseException {
+        return managementService.getLegalHoliday(params);
     }
 }
