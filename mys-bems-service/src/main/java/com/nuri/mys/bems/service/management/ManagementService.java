@@ -15,6 +15,7 @@ import com.nuri.mys.bems.service.common.PagingParamService;
 import com.nuri.mys.bems.service.common.PasswordEncoding;
 import com.nuri.mys.bems.service.common.UmsService;
 import com.nuri.mys.bems.service.control.ControlService;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -852,12 +853,18 @@ public class ManagementService implements ManagementLogic {
         String strToday = today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         params.setToday(strToday);
 
-        Set<String> holidayList = new HashSet<String>();
-        Set<String> closedDayList = new HashSet<String>();
         List<ClosedDayRes> holidayMapList = new ArrayList<ClosedDayRes>();
+        List<ClosedDayRes> closedDayMapList = new ArrayList<ClosedDayRes>();
 
-        if(!params.getClosedDay().isEmpty()) {
-            closedDayList.add(params.getClosedDay());
+        if(params.getClosedDay() != null && !params.getClosedDay().isEmpty()) {
+            ClosedDayRes closedDayRes = new ClosedDayRes();
+            closedDayRes.setTime(params.getClosedDay());
+            closedDayRes.setHolidDesc(params.getHolidayDesc());
+            if(params.getLegalHolidayYn().toUpperCase().equals("Y")) {
+                holidayMapList.add(closedDayRes);
+            } else {
+                closedDayMapList.add(closedDayRes);
+            }
 //            params.getLegalHolidayYn().toUpperCase().equals("Y") ?
 //                    saveL :
 //            holidayList.retainAll(closedDayList);
@@ -870,7 +877,6 @@ public class ManagementService implements ManagementLogic {
             if(params.getLegalHolidayChk().equals("1")) {
 //                holidayList = managementStore.getLegalHolidayData(params);
                 holidayMapList = managementStore.getLegalHolidayData(params);
-                holidayList = holidayMapList.stream().map(ClosedDayRes::getTime).collect(Collectors.toSet());
             }
 
             // 해당 년도의 오늘 날짜 이후 요일별 운휴일 등록
@@ -881,24 +887,33 @@ public class ManagementService implements ManagementLogic {
 
                 while (firstDate.isBefore(lastDate)) {
                     if (firstDate.isAfter(today)) {
-                        closedDayList.add(firstDate.toString().replaceAll("-", ""));
+                        ClosedDayRes closedDayRes = new ClosedDayRes();
+                        closedDayRes.setTime(firstDate.toString().replaceAll("-", ""));
+                        closedDayMapList.add(closedDayRes);
                     }
                     firstDate = firstDate.plusDays(7);
                 }
 
                 if (firstDate.isEqual(lastDate)) {
                     if (firstDate.isAfter(today)) {
-                        closedDayList.add(firstDate.toString().replaceAll("-", ""));
+                        ClosedDayRes closedDayRes = new ClosedDayRes();
+                        closedDayRes.setTime(firstDate.toString().replaceAll("-", ""));
+                        closedDayMapList.add(closedDayRes);
                     }
                 }
             }
-            closedDayList.removeAll(holidayList);
+            List<ClosedDayRes> finalHolidayMapList = holidayMapList;
+
+            closedDayMapList.removeIf(closedDay -> {
+                String timeToRemove = closedDay.getTime();
+                return finalHolidayMapList.stream().anyMatch(holiday -> holiday.getTime().equals(timeToRemove));
+            });
         }
 
-        params.setClosedDayArr(closedDayList.toArray(new String[0]));
+        params.setClosedDayList(closedDayMapList);
         params.setHolidayList(holidayMapList);
 
-        if(params.getClosedDayArr() != null && params.getClosedDayArr().length > 0) {
+        if(closedDayMapList != null && closedDayMapList.size() > 0) {
             int saveStatus01 = managementStore.saveClosedData(params);
             if(saveStatus01 == 0) {
                 result.setStatus(commonStore.getMessageStatusCode("FAIL"));
@@ -907,7 +922,7 @@ public class ManagementService implements ManagementLogic {
                 return result;
             } else {
                 params.setHolidayCd("0");
-                params.setDay(params.getClosedDayArr()[0]);
+                params.setDay(params.getClosedDayList().get(0).getTime());
             }
         }
         if(holidayMapList != null && holidayMapList.size() > 0) {

@@ -605,14 +605,14 @@
         (
             V_SITE_ID, V_TIME_DD, V_DEVICE_ID
             , V_HOLID_CD, N_WEEK_CD, V_GR_ID, V_USER_ID
-            , V_LEGAL_HOLID_YN, V_CREATE_ID, V_UPDATE_ID
+            , V_LEGAL_HOLID_YN, V_HOLID_DESC, V_CREATE_ID, V_UPDATE_ID
         )
         VALUES
-        <foreach collection="closedDayArr" item="day" separator=",">
+        <foreach collection="closedDayList" item="closedday" separator=",">
             (
-                #{siteId}, #{day}, #{deviceId}
-                , '0', DAYOFWEEK(#{day}), '100', #{userId}
-                , 'N', #{userId}, #{userId}
+                #{siteId}, #{closedday.time}, #{deviceId}
+                , '0', DAYOFWEEK(#{closedday.time}), '100', #{userId}
+                , 'N', #{closedday.holidDesc}, #{userId}, #{userId}
             )
         </foreach>
     </insert>

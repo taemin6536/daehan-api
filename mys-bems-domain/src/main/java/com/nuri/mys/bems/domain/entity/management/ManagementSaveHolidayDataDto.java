@@ -17,12 +17,14 @@ public class ManagementSaveHolidayDataDto extends ManagementHolidayCommonDto{
     private String legalHolidayChk;
     @Schema(description="요일 배열", example="['1', '2', '3']")
     private String[] weekArr;
-    @Schema(description="지정 운휴 일자 배열(오늘 날짜 이후로 등록할 모든 운휴일)", example="[20230710, 20230711]")
-    private String[] closedDayArr;
-    @Schema(description="지정 운휴 일자", example="20240131")
+    @Schema(description="지정 운휴 일자", example="20241031")
     private String closedDay;
-    @Schema(description="법정공휴일 지정 여부", example="N")
+    @Schema(description="법정공휴일 지정 여부", example="Y")
     private String legalHolidayYn;
+    @Schema(description="휴일 설명", example="Halloween")
+    private String holidayDesc;
+    @Schema(description="공휴일 배열", hidden=true)
+    private List<ClosedDayRes> closedDayList;
     @Schema(description="공휴일 배열", hidden=true)
     private List<ClosedDayRes> holidayList;
     @Schema(description="오늘 날짜", hidden=true)
@@ -61,14 +63,6 @@ public class ManagementSaveHolidayDataDto extends ManagementHolidayCommonDto{
         this.weekArr = weekArr;
     }
 
-    public String[] getClosedDayArr() {
-        return closedDayArr;
-    }
-
-    public void setClosedDayArr(String[] closedDayArr) {
-        this.closedDayArr = closedDayArr;
-    }
-
     public String getClosedDay() {
         return closedDay;
     }
@@ -83,6 +77,22 @@ public class ManagementSaveHolidayDataDto extends ManagementHolidayCommonDto{
 
     public void setLegalHolidayYn(String legalHolidayYn) {
         this.legalHolidayYn = legalHolidayYn;
+    }
+
+    public String getHolidayDesc() {
+        return holidayDesc;
+    }
+
+    public void setHolidayDesc(String holidayDesc) {
+        this.holidayDesc = holidayDesc;
+    }
+
+    public List<ClosedDayRes> getClosedDayList() {
+        return closedDayList;
+    }
+
+    public void setClosedDayList(List<ClosedDayRes> closedDayList) {
+        this.closedDayList = closedDayList;
     }
 
     public List<ClosedDayRes> getHolidayList() {
