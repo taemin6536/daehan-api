@@ -45,7 +45,7 @@ public class DashboardResource {
     }
 
     @PostMapping("/pms/dashboard/status/essRunData")
-    @Operation(summary = "대시보드 > ESS 운용률", description = "금일, 전일 충방전 운용률 데이터")
+    @Operation(summary = "대시보드 > ESS 운용률", description = "금일, 전일 충방전 운용률 데이터", hidden=true)
     public DashboardEssRunDataRes getEssRunData(@ApiIgnore Authentication authentication) {
         return dashboardService.getEssRunData();
     }

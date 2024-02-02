@@ -674,7 +674,7 @@
         VALUES
         <foreach collection="list" item="holiday" separator=",">
             (
-                #{holiday.holiday}, #{holiday.holidayDesc}, #{holiday.lunarYn}, NOW(), NOW()
+                #{holiday.holiday}, #{holiday.holidayDesc}, UPPER(#{holiday.lunarYn}), NOW(), NOW()
             )
         </foreach>
     </insert>

@@ -40,6 +40,14 @@ public class DashboardOperationChartRes {
 		this.periodGenKwh = periodGenKwh;
 	}
 
+	public String getTime() {
+		return time;
+	}
+
+	public void setTime(String time) {
+		this.time = time;
+	}
+
 	@Override
 	public String toString() {
 		return ToStringBuilder.reflectionToString(this, ToStringStyle.JSON_STYLE);
