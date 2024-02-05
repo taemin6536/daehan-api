@@ -79,7 +79,5 @@ public interface ManagementStore {
 
     int insertLegalHoliday(List<ManagementSaveLegalHolidayDto> params);
 
-    int getLegalHolidayTableCnt(ManagementLegalHolidayTableDto params);
-
-    List<ManagementLegalHolidayTableRes> getLegalHolidayTable(ManagementLegalHolidayTableDto params);
+    List<ManagementLegalHolidayTableRes> getLegalHolidayTable();
 }

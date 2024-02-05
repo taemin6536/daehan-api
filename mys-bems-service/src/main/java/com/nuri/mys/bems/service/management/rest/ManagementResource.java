@@ -266,8 +266,7 @@ public class ManagementResource {
     @PostMapping("/pms/management/setting/getLegalHoliday")
     @Operation(summary = "Management > 운휴 설정 ", description = "공휴일 목록 조회")
     public List<ManagementLegalHolidayTableRes> getLegalHoliday(
-            @ApiIgnore Authentication authentication,
-            @Valid @RequestBody ManagementLegalHolidayTableDto params) throws ParseException {
-        return managementService.getLegalHoliday(params);
+            @ApiIgnore Authentication authentication) throws ParseException {
+        return managementService.getLegalHoliday();
     }
 }

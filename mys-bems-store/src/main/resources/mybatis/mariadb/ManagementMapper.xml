@@ -679,18 +679,11 @@
         </foreach>
     </insert>
 
-    <select id="getLegalHolidayTableCnt" parameterType="map" resultType="int">
-        /* managementMapper.getLegalHolidayTable */
-        SELECT COUNT(*)
-        FROM NST_HOLIDAY_INFO_NEW
-    </select>
-
     <select id="getLegalHolidayTable" parameterType="map" resultType="com.nuri.mys.bems.domain.entity.management.ManagementLegalHolidayTableRes">
         /* managementMapper.getLegalHolidayTable */
-        <include refid="pagingMapper.prePaging" />
             SELECT V_HOLIDAY AS holiday, V_HOLIDAY_DESC AS holidayDesc, V_LUNAR_YN AS lunarYn
                     , T_CREATE_DT AS createDt, T_UPDATE_DT AS updateDt
               FROM NST_HOLIDAY_INFO_NEW
-        <include refid="pagingMapper.afterPaging" />
+             ORDER BY V_HOLIDAY ASC
     </select>
 </mapper>

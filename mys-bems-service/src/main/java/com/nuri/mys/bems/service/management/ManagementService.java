@@ -978,14 +978,9 @@ public class ManagementService implements ManagementLogic {
     }
 
     @Override
-    public List<ManagementLegalHolidayTableRes> getLegalHoliday(ManagementLegalHolidayTableDto params) {
-        PagingParamService.setPagingParam(params);
-        int cnt = managementStore.getLegalHolidayTableCnt(params);
+    public List<ManagementLegalHolidayTableRes> getLegalHoliday() {
         List<ManagementLegalHolidayTableRes> result = new ArrayList<ManagementLegalHolidayTableRes>();
-        result = managementStore.getLegalHolidayTable(params);
-        if(result.size() > 0){
-            result.get(0).setDataTotalCount(cnt);
-        }
+        result = managementStore.getLegalHolidayTable();
         return result;
     }
 

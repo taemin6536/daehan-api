@@ -53,5 +53,5 @@ public interface ManagementLogic {
 
     CommonResultRes saveLegalHoliday(List<ManagementSaveLegalHolidayDto> params);
 
-    List<ManagementLegalHolidayTableRes> getLegalHoliday(ManagementLegalHolidayTableDto params);
+    List<ManagementLegalHolidayTableRes> getLegalHoliday();
 }
