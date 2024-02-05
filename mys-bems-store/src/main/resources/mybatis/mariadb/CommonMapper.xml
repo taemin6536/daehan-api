@@ -32,6 +32,7 @@
         SELECT
             V_DETAIL_CD AS detailCd
             , V_CD_NM AS cdNm
+            , V_CD_HAN_NM AS cdHanNm
             , V_CD_ENG_NM AS cdEngNm
         FROM    NST_CD_DETAIL
         WHERE   V_MASTER_CD = 'SM024'

@@ -964,11 +964,25 @@ public class ManagementService implements ManagementLogic {
     @Override
     public CommonResultRes saveLegalHoliday(List<ManagementSaveLegalHolidayDto> params) {
         CommonResultRes result = new CommonResultRes();
+
+        // 중복확인
+        Set<String> uniqueValues = new HashSet<>(
+                params.stream()
+                        .map(dto -> dto.getHoliday() + dto.getLunarYn())
+                        .collect(Collectors.toList())
+        );
+        if (uniqueValues.size() < params.size()) {
+            result.setStatus(commonStore.getMessageStatusCode("FAIL"));
+            code = commonStore.getMessageStatusCodeNew("DATA_OVERLAP");
+            result.setFailContents(code.getCdHanNm());
+            return result;
+        }
+
         managementStore.deleteLegalHoliday();
         int i = managementStore.insertLegalHoliday(params);
         if(i == 0) {
             result.setStatus(commonStore.getMessageStatusCode("FAIL"));
-            code = commonStore.getMessageStatusCodeNew("NOT_EXIST_DELETE_DATA");
+            code = commonStore.getMessageStatusCodeNew("NOT_EXIST_INSERT_DATA");
             result.setFailContents(code.getCdHanNm());
             return result;
         }
