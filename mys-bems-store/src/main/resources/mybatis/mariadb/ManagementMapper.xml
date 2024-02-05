@@ -638,7 +638,7 @@
                     FROM NST_SOLATOLUNAR
                     WHERE LEFT(SOLA, 4) = #{year}
               ) AS S
-                ON H.V_HOLIDAY = RIGHT(LUNAR, 5)
+                ON H.V_HOLIDAY = REPLACE(RIGHT(LUNAR, 5), '-', '')
           ) AS A
          WHERE TIME > #{today}
          ORDER BY time ASC
