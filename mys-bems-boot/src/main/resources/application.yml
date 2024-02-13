@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8083
 
 #MariaDB
 spring:
@@ -13,7 +13,6 @@ spring:
       jdbc-url: jdbc:mariadb://172.16.10.143:13007/pv_ess
       username: pms
       password: pmsPMS2018@#$
-
 ---
 spring:
   publicKeyString: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLfWTefQbvzZBauNdKhpOnXdYTYxzvG1Mq3nUHtJ6XekIzOxxqbDHVHQTqLZB3jdbpIFU+dQqMPGTHyG5/Sdn+XNMXNUW9rka4l4nqZ99Pxiev+pYvtPEIwj/ioZG5NsVrMJzc0VDzD0JrE6BN1wJeLJJX2oXn3og2hlBgfu19KQIDAQAB

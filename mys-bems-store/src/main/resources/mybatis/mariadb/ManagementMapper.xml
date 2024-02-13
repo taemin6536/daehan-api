@@ -632,13 +632,13 @@
           FROM (
             SELECT REPLACE(IF(V_LUNAR_YN='Y', S.SOLA, CONCAT(#{year}, '-', H.V_HOLIDAY)), '-', '') AS time
                     , V_HOLIDAY_DESC AS holidDesc
-              FROM NST_HOLIDAY_INFO_NEW AS H
+              FROM NST_HOLIDAY_INFO AS H
               LEFT JOIN (
                     SELECT *
                     FROM NST_SOLATOLUNAR
                     WHERE LEFT(SOLA, 4) = #{year}
               ) AS S
-                ON H.V_HOLIDAY = REPLACE(RIGHT(LUNAR, 5), '-', '')
+                ON H.V_HOLIDAY = RIGHT(LUNAR, 5)
           ) AS A
          WHERE TIME > #{today}
          ORDER BY time ASC
@@ -661,13 +661,13 @@
     <delete id="deleteLegalHoliday" parameterType="map">
         /* managementMapper.deleteLegalHoliday */
         DELETE
-        FROM NST_HOLIDAY_INFO_NEW
+        FROM NST_HOLIDAY_INFO
         WHERE N_HOLIDAY_SEQ >= 0
     </delete>
 
     <insert id="insertLegalHoliday" parameterType="map">
         /* managementMapper.insertLegalHoliday */
-        INSERT INTO NST_HOLIDAY_INFO_NEW
+        INSERT INTO NST_HOLIDAY_INFO
         (
             V_HOLIDAY, V_HOLIDAY_DESC, V_LUNAR_YN, T_CREATE_DT, T_UPDATE_DT
         )
@@ -681,9 +681,10 @@
 
     <select id="getLegalHolidayTable" parameterType="map" resultType="com.nuri.mys.bems.domain.entity.management.ManagementLegalHolidayTableRes">
         /* managementMapper.getLegalHolidayTable */
+        <include refid="pagingMapper.prePaging" />
             SELECT V_HOLIDAY AS holiday, V_HOLIDAY_DESC AS holidayDesc, V_LUNAR_YN AS lunarYn
                     , T_CREATE_DT AS createDt, T_UPDATE_DT AS updateDt
-              FROM NST_HOLIDAY_INFO_NEW
+              FROM NST_HOLIDAY_INFO
              ORDER BY V_HOLIDAY ASC
     </select>
 </mapper>
