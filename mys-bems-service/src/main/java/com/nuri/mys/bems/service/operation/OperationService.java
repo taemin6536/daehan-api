@@ -139,6 +139,9 @@ public class OperationService implements OperationLogic {
             case "ths":
                 resultList = (List<T>) operationStore.getThsStatusChart(params);
                 break;
+            case "pvs":
+                resultList = (List<T>) operationStore.getPvsStatusChart(params);
+                break;
         }
         return resultList;
     }

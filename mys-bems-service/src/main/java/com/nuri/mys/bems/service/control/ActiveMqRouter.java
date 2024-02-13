@@ -34,6 +34,11 @@ public class ActiveMqRouter extends RouteBuilder {
 		.to("bean:pushHandler?method=sendDeviceRealtime")
 		.end();
 
+		from("jms:topic:pms/ems/pvs/monitor")
+		.id("RealtimePvs")
+		.to("bean:pushHandler?method=sendDeviceRealtime")
+		.end();
+
 		from("jms:topic:pms/ems/ths/monitor")
 		.id("RealtimeThs")
 		.to("bean:pushHandler?method=sendDeviceRealtime")
@@ -44,5 +49,4 @@ public class ActiveMqRouter extends RouteBuilder {
 		.to("bean:pushHandler?method=sendEventRealtime")
 		.end();
 	}
-}//class
-
+}

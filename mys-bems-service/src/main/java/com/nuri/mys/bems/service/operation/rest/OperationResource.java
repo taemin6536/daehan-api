@@ -119,6 +119,24 @@ public class OperationResource {
         return operationService.getDeviceStatusTable(params, request);
     }
 
+    @PostMapping("/pms/operation/status/pvsOperationStatusChart")
+    @Operation(summary="현황 > 장비현황", description="pvs 운영현황 차트")
+    public List<OperationDevicePvsDataRes> getPvsStatusChart(
+            @ApiIgnore Authentication authentication,
+            @Valid @RequestBody OperationDeviceCommonDto params,
+            HttpServletRequest request){
+        return operationService.getDeviceStatusChart(params, request);
+    }
+
+    @PostMapping("/pms/operation/status/pvsOperationStatusTable")
+    @Operation(summary="현황 > 장비현황", description="pvs 운영현황 그리드")
+    public List<OperationDevicePvsDataRes> getPvsStatusTable(
+            @ApiIgnore Authentication authentication,
+            @Valid @RequestBody OperationDeviceCommonDto params,
+            HttpServletRequest request){
+        return operationService.getDeviceStatusTable(params, request);
+    }
+
     @PostMapping("/pms/operation/status/operationEventSummary")
     @Operation(summary="현황 > 이벤트 현황", description="금일의 장비별 고장/경고 이벤트 발생 횟수 요약 데이터")
     public List<OperationEventSummaryRes> getEventStatusSummary(@ApiIgnore Authentication authentication){

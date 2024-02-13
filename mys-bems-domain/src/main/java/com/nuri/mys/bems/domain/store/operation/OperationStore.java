@@ -31,4 +31,6 @@ public interface OperationStore {
     List<OperationTableRes> getOperationTable(CommonPageDto params);
 
     int getOperationTableCount(CommonPageDto params);
+
+    List<OperationDevicePvsDataRes> getPvsStatusChart(OperationDeviceCommonDto params);
 }

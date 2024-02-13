@@ -263,6 +263,37 @@
         ORDER BY time ASC
     </select>
 
+    <select id="getPvsStatusChart" resultType="com.nuri.mys.bems.domain.entity.operation.OperationDevicePvsDataRes"
+            parameterType="map">
+        /* OperationMapper.getPvsStatusChart */
+        SELECT time, deviceId, deviceNm,
+        <foreach collection="columnArray" item="column" separator="," index="index">
+            ${column}
+        </foreach>
+        FROM (
+            SELECT
+                V_TIME AS time
+                , V_DEVICE_ID AS deviceId
+                , V_DEVICE_NM AS deviceNm
+                , D_PERIOD_HORI_SOLAR as horiRadiation -- 수평 일사량
+                , D_PERIOD_SLOP_SOLAR as inclRadiation -- 경사 일사량
+                , D_TEMP AS temp -- 온도
+                , D_HUMIDITY AS humidity -- 습도
+            FROM NRT_PVS_MINLY_STAT
+            WHERE V_SITE_ID = (
+                SELECT V_SITE_ID
+                FROM NST_PMS_SETTING
+                WHERE V_CATEGORY = "sysOPMode"
+            )
+            <if test="deviceId != null and deviceId !=''">
+                AND V_DEVICE_ID = #{deviceId}
+            </if>
+            ORDER BY V_TIME DESC
+            LIMIT 90
+        ) AS DATA
+        ORDER BY time ASC
+    </select>
+
     <select id="getEventStatusSummary" resultType="com.nuri.mys.bems.domain.entity.operation.OperationEventSummaryRes">
         /*OperationMapper.getEventStatusSummary */
         SELECT V_DETAIL_CD AS grId, V_CD_NM AS grNm, IFNULL(fault, 0) AS fault, IFNULL(warning, 0) AS warning
