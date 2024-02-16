@@ -9,8 +9,8 @@ public class OperationDevicePvsDataRes extends OperationDeviceCommonRes{
 	private Double horiRadiation;
     @Schema(description = "경사 일사량")
 	private Double inclRadiation;
-	@Schema(description = "DC 전압")
-	private Double temp;
+	@Schema(description = "온도")
+	private Double temperature;
 	@Schema(description = "습도")
 	private Double humidity;
 
@@ -30,12 +30,12 @@ public class OperationDevicePvsDataRes extends OperationDeviceCommonRes{
 		this.inclRadiation = inclRadiation;
 	}
 
-	public Double getTemp() {
-		return temp;
+	public Double getTemperature() {
+		return temperature;
 	}
 
-	public void setTemp(Double temp) {
-		this.temp = temp;
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
 	}
 
 	public Double getHumidity() {

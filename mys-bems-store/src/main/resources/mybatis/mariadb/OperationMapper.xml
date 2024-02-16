@@ -277,7 +277,7 @@
                 , V_DEVICE_NM AS deviceNm
                 , D_PERIOD_HORI_SOLAR as horiRadiation -- 수평 일사량
                 , D_PERIOD_SLOP_SOLAR as inclRadiation -- 경사 일사량
-                , D_TEMP AS temp -- 온도
+                , D_TEMP AS temperature -- 온도
                 , D_HUMIDITY AS humidity -- 습도
             FROM NRT_PVS_MINLY_STAT
             WHERE V_SITE_ID = (

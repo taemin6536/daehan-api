@@ -63,7 +63,7 @@ public class PushHandler {
             jsonObj.put("payload", payload);
             jsonObj.put("classification", "device"); // 장비 실시간 데이터
             processingDeviceData(jsonObj, grId);
-            log.info("sendDeviceRealtime = {}", jsonObj.toString());
+//            log.info("sendDeviceRealtime = {}", jsonObj.toString());
             this.template.convertAndSend("/pms/push/realtimeData/"+jsonObj.get("siteId"), jsonObj);
 
         } catch (Exception e) {
