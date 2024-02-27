@@ -39,6 +39,7 @@ public class LoginResource {
     @Operation(summary = "LOGIN",description = "시스템 세팅 값 조회(알람 사용 여부, 로그인 실패 횟수 제한 등)")
     public LoginSystemSettingRes getSystemSetting(){
         System.out.printf("자동배포 테스트1111");
+        System.out.printf("test");
         return loginService.getSystemSetting();
     }
 
