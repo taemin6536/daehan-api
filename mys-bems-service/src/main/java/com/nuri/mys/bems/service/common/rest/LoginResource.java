@@ -40,7 +40,7 @@ public class LoginResource {
     @PostMapping("/pms/login/getSystemSetting")
     @Operation(summary = "LOGIN",description = "시스템 세팅 값 조회(알람 사용 여부, 로그인 실패 횟수 제한 등)")
     public LoginSystemSettingRes getSystemSetting(){
-        log.info("자동배포 테스트1111");
+        log.info("자동배포 테스트202402271508");
         return loginService.getSystemSetting();
     }
 
