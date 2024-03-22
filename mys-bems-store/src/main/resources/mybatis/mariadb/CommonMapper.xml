@@ -60,7 +60,7 @@
              , V_CD_ENG_NM AS cdEngNm
              , V_CD_HAN_NM AS cdHanNm
         FROM NST_CD_DETAIL
-        WHERE V_MASTER_CD = 'SM049'
+        WHERE V_MASTER_CD = 'SM012'
     </select>
 
     <select id="getThsLocInfo" resultType="com.nuri.mys.bems.domain.entity.common.CommonCodeRes">

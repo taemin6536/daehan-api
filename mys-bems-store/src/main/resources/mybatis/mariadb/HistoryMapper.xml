@@ -232,7 +232,7 @@
         LEFT OUTER JOIN nst_device_info D ON D.V_DEVICE_ID = E.V_DEVICE_ID
         LEFT OUTER JOIN nst_cd_detail CD ON CD.V_MASTER_CD = 'SM010'
         AND CD.V_DETAIL_CD = E.V_EVENT_LVL
-        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM049'
+        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM012'
         AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
         <where>
             <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
@@ -281,7 +281,7 @@
         LEFT OUTER JOIN nst_device_info D ON D.V_DEVICE_ID = E.V_DEVICE_ID
         LEFT OUTER JOIN nst_cd_detail CD ON CD.V_MASTER_CD = 'SM010'
             AND CD.V_DETAIL_CD = E.V_EVENT_LVL
-        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM049'
+        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM012'
             AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
         <where>
             <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
@@ -593,7 +593,7 @@
         LEFT OUTER JOIN nst_device_info D ON D.V_DEVICE_ID = E.V_DEVICE_ID
         LEFT OUTER JOIN nst_cd_detail CD ON CD.V_MASTER_CD = 'SM010'
         AND CD.V_DETAIL_CD = E.V_EVENT_LVL
-        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM049'
+        LEFT OUTER JOIN nst_cd_detail CD2 ON CD2.V_MASTER_CD = 'SM012'
         AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
         ORDER BY E.V_START_TIME DESC
         LIMIT 10

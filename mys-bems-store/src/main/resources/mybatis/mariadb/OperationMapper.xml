@@ -303,18 +303,7 @@
                 , SUM(if(EVENT01.V_EVENT_LVL='F',1,0)) AS fault
                 , SUM(if(EVENT01.V_EVENT_LVL='W',1,0)) as warning
             FROM NHT_EVENT AS EVENT01
-            LEFT JOIN (
-                SELECT V_DEVICE_ID, V_START_TIME, V_END_TIME, V_EVENT_STATUS_CD, V_EVENT_NM
-                FROM NHT_EVENT
-                WHERE V_EVENT_STATUS_CD = 'SD005'
-                  AND V_END_TIME != ''
-                AND V_END_TIME IS NOT NULL
-            ) AS EVENT02
-            ON EVENT01.V_DEVICE_ID = EVENT02.V_DEVICE_ID
-            AND EVENT01.V_START_TIME = EVENT02.V_START_TIME
-            AND EVENT01.V_EVENT_NM = EVENT02.V_EVENT_NM
             WHERE EVENT01.V_START_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'),'%')
-              AND EVENT01.V_EVENT_STATUS_CD != 'SD005'
             GROUP BY EVENT01.V_GR_ID
         ) AS DATA
         ON CD.V_DETAIL_CD = DATA.V_GR_ID
@@ -342,30 +331,22 @@
             SELECT EVENT01.V_SITE_ID
                  , EVENT01.N_EVENT_SEQ
                  , EVENT01.V_START_TIME
-                 , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_END_TIME, EVENT01.V_END_TIME) AS V_END_TIME
+                 , EVENT01.V_END_TIME
                  , EVENT01.V_DEVICE_ID
                  , EVENT01.V_EVENT_LVL
-                 , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_EVENT_STATUS_CD, EVENT01.V_EVENT_STATUS_CD) AS V_EVENT_STATUS_CD
+                 , EVENT01.V_EVENT_STATUS_CD
                  , EVENT01.V_EVENT_NM
                  , EVENT01.V_EVENT_DESC
             FROM NHT_EVENT AS EVENT01
-            LEFT JOIN (
-                SELECT V_DEVICE_ID, V_START_TIME, V_END_TIME, V_EVENT_STATUS_CD, V_EVENT_NM
-                FROM NHT_EVENT
-                WHERE V_EVENT_STATUS_CD = 'SD005'
-                AND V_END_TIME != ''
-                AND V_END_TIME IS NOT NULL
-            ) AS EVENT02
-            ON EVENT01.V_DEVICE_ID = EVENT02.V_DEVICE_ID
-            AND EVENT01.V_START_TIME = EVENT02.V_START_TIME
-            AND EVENT01.V_EVENT_NM = EVENT02.V_EVENT_NM
             WHERE EVENT01.V_START_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'),'%')
-            AND EVENT01.V_EVENT_STATUS_CD != 'SD005'
             <if test="grId != null and grId !=''"> <!-- 장비그룹 -->
                 AND EVENT01.V_GR_ID = #{grId}
             </if>
             <if test="eventLvl != null and eventLvl !=''"> <!-- 수위 -->
                 AND EVENT01.V_EVENT_LVL =  #{eventLvl}
+            </if>
+            <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
+                AND EVENT01.V_EVENT_STATUS_CD =  #{eventStatusCd}
             </if>
         ) AS E
         LEFT OUTER JOIN NST_DEVICE_INFO D
@@ -375,13 +356,8 @@
         ON CD.V_MASTER_CD = 'SM010'
         AND CD.V_DETAIL_CD = E.V_EVENT_LVL
         LEFT OUTER JOIN NST_CD_DETAIL CD2
-        ON CD2.V_MASTER_CD = 'SM049'
+        ON CD2.V_MASTER_CD = 'SM012'
         AND CD2.V_DETAIL_CD = E.V_EVENT_STATUS_CD
-        <where>
-            <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
-                AND E.V_EVENT_STATUS_CD =  #{eventStatusCd}
-            </if>
-        </where>
         <include refid="pagingMapper.afterPaging" />
     </select>
 
@@ -393,23 +369,13 @@
             SELECT EVENT01.V_SITE_ID
                 , EVENT01.N_EVENT_SEQ
                 , EVENT01.V_START_TIME
-                , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_END_TIME, EVENT01.V_END_TIME) AS V_END_TIME
+                , EVENT01.V_END_TIME
                 , EVENT01.V_DEVICE_ID
                 , EVENT01.V_EVENT_LVL
-                , IF(EVENT02.V_EVENT_STATUS_CD = 'SD005', EVENT02.V_EVENT_STATUS_CD, EVENT01.V_EVENT_STATUS_CD) AS V_EVENT_STATUS_CD
+                , EVENT01.V_EVENT_STATUS_CD
                 , EVENT01.V_EVENT_NM
                 , EVENT01.V_EVENT_DESC
             FROM NHT_EVENT AS EVENT01
-            LEFT JOIN (
-                SELECT V_DEVICE_ID, V_START_TIME, V_END_TIME, V_EVENT_STATUS_CD, V_EVENT_NM
-                FROM NHT_EVENT
-                WHERE V_EVENT_STATUS_CD = 'SD005'
-                AND V_END_TIME != ''
-                AND V_END_TIME IS NOT NULL
-            ) AS EVENT02
-            ON EVENT01.V_DEVICE_ID = EVENT02.V_DEVICE_ID
-            AND EVENT01.V_START_TIME = EVENT02.V_START_TIME
-            AND EVENT01.V_EVENT_NM = EVENT02.V_EVENT_NM
             WHERE EVENT01.V_START_TIME LIKE CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'),'%')
             <if test="grId != null and grId !=''"> <!-- 장비그룹 -->
                 AND EVENT01.V_GR_ID = #{grId}
@@ -417,11 +383,9 @@
             <if test="eventLvl != null and eventLvl !=''"> <!-- 수위 -->
                 AND EVENT01.V_EVENT_LVL =  #{eventLvl}
             </if>
-        ) AS E
-        <where>
             <if test="eventStatusCd != null and eventStatusCd !=''"> <!-- 상태 -->
                 AND E.V_EVENT_STATUS_CD =  #{eventStatusCd}
             </if>
-        </where>
+        ) AS E
     </select>
 </mapper>
