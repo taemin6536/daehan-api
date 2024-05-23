@@ -1,6 +1,6 @@
 FROM openjdk:8-jdk
 
-ENV TZ=Asia/Seoul
+ENV TZ=Asia/Kuala_Lumpur
 
 WORKDIR /usr/src/app
 

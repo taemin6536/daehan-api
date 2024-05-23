@@ -320,6 +320,9 @@ public class UmsService {
         String umsClassification = commonStore.getUmsClassification();
         if(umsClassification != null) {
             JSONObject umsInfo = commonStore.getPmsUserSmsInfo();
+            if(umsInfo == null) {
+                return;
+            }
             String smsInfo = umsInfo.get("mobileNo") == null ? "" : (String) umsInfo.get("mobileNo"); // 전화번호 세팅
             String emailInfo = umsInfo.get("email") == null ? "" : (String) umsInfo.get("email"); // 이메일 세팅
             String telegramInfo = umsInfo.get("telegramId") == null ? "" : (String) umsInfo.get("telegramId"); // 텔레그램

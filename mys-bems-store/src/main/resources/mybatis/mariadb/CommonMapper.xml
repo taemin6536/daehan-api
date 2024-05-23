@@ -99,7 +99,7 @@
     </select>
 
     <select id="getUmsClassification" resultType="String">
-        /* CommonMapper.getPmsUserSmsInfo */
+        /* CommonMapper.getUmsClassification */
         SELECT GROUP_CONCAT(V_COLUMN ORDER BY N_KEY_ORD) AS division
         FROM (
             SELECT N_KEY_ORD
