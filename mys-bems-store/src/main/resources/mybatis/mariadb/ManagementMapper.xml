@@ -459,8 +459,8 @@
         SELECT
             N_SCH_SEQ AS schSeq, SCH.V_SITE_ID AS siteId, SCH.V_GR_ID AS grId
             , SCH.V_DEVICE_ID AS deviceId, DEVICE.V_DEVICE_NM AS deviceNm
-            , CD01.V_CD_HAN_NM AS weekNm, CD02.V_CD_HAN_NM AS seasonNm
-            , CD03.V_CD_HAN_NM AS chadiStatusNm, D_CHADI_KW AS chadiKw
+            , CD01.V_CD_ENG_NM AS weekNm, CD02.V_CD_ENG_NM AS seasonNm
+            , CD03.V_CD_ENG_NM AS chadiStatusNm, D_CHADI_KW AS chadiKw
             , CONCAT(V_START_HH,':',V_START_MI) as startTime
             , CONCAT(V_END_HH,':',V_END_MI) as endTime
         FROM NST_CHADI_SCH_INFO SCH
@@ -496,7 +496,7 @@
         SELECT
             N_SCH_SEQ AS schSeq, SCH.V_SITE_ID AS siteId
             , SCH.V_DEVICE_ID AS deviceId, DEVICE.V_DEVICE_NM AS deviceNm
-            , CD01.V_CD_HAN_NM AS weekNm, CD02.V_CD_HAN_NM AS seasonNm
+            , CD01.V_CD_ENG_NM AS weekNm, CD02.V_CD_ENG_NM AS seasonNm
             , CD03.V_CD_NM AS chadiStatusNm, D_CHADI_KW AS chadiKw
             , V_START_HH AS startHh, V_START_MI AS startMi, V_END_HH As endHh, V_END_MI AS endMi
         FROM NST_CHADI_SCH_INFO AS SCH
