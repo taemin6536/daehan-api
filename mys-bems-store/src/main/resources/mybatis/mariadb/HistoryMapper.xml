@@ -458,6 +458,7 @@
             , V_TRIP_STATUS AS tripState
             , V_GEN_STATUS AS genState
             , D_ACT_KW AS actKw
+            , D_REACT_KW AS reactKw
             , D_DC_V AS dcV
             , D_DC_A AS dcA
             , D_DC_KW AS dcKw

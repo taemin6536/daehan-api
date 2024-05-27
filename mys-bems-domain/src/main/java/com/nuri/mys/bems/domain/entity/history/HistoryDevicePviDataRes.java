@@ -20,6 +20,8 @@ public class HistoryDevicePviDataRes {
     private String genState;
     @Schema(description = "유효 전력")
     private Double actKw;
+    @Schema(description = "무효 전력")
+    private Double reactKw;
     @Schema(description = "DC 전압")
     private Double dcV;
     @Schema(description = "DC 전류")
@@ -111,6 +113,14 @@ public class HistoryDevicePviDataRes {
 
     public void setActKw(Double actKw) {
         this.actKw = actKw;
+    }
+
+    public Double getReactKw() {
+        return reactKw;
+    }
+
+    public void setReactKw(Double reactKw) {
+        this.reactKw = reactKw;
     }
 
     public Double getDcV() {
