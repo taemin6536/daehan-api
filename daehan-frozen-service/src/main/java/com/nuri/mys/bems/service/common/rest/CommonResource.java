@@ -5,7 +5,7 @@ import com.nuri.mys.bems.domain.entity.common.CommonDeviceDetailDto;
 import com.nuri.mys.bems.domain.entity.common.CommonDeviceDetailRes;
 import com.nuri.mys.bems.domain.logic.common.CommonLogic;
 import com.nuri.mys.bems.domain.entity.common.*;
-import com.nuri.mys.bems.service.common.PushTestHandler;
+//import com.nuri.mys.bems.service.common.PushTestHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.logging.log4j.LogManager;
@@ -29,8 +29,6 @@ public class CommonResource {
     @Autowired
     private CommonLogic commonService;
 
-    @Autowired
-    private PushTestHandler pushHandler;
 
     @PostMapping("/pms/common/deviceInfo")
     @Operation(summary = "장비그룹목록", description = "PCS, BMS 등 장비 그룹 목록")

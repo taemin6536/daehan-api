@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.nuri.mys.bems</groupId>
-    <artifactId>mys-bems</artifactId>
-    <name>mys-bems</name>
+    <groupId>com.daehan.frozen</groupId>
+    <artifactId>daehan-frozen</artifactId>
+    <name>daehan-frozen</name>
     <packaging>pom</packaging>
     <version>1.0.0</version>
 
@@ -35,23 +35,23 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.nuri.mys.bems</groupId>
-                <artifactId>mys-bems-boot</artifactId>
+                <groupId>com.daehan.frozen</groupId>
+                <artifactId>daehan-frozen-boot</artifactId>
                 <version>${pms.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.nuri.mys.bems</groupId>
-                <artifactId>mys-bems-domain</artifactId>
+                <groupId>com.daehan.frozen</groupId>
+                <artifactId>daehan-frozen-domain</artifactId>
                 <version>${pms.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.nuri.mys.bems</groupId>
-                <artifactId>mys-bems-service</artifactId>
+                <groupId>com.daehan.frozen</groupId>
+                <artifactId>daehan-frozen-service</artifactId>
                 <version>${pms.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.nuri.mys.bems</groupId>
-                <artifactId>mys-bems-store</artifactId>
+                <groupId>com.daehan.frozen</groupId>
+                <artifactId>daehan-frozen-store</artifactId>
                 <version>${pms.version}</version>
             </dependency>
             <dependency>
@@ -216,9 +216,9 @@
         </plugins>
     </build>
 <modules>
-    <module>mys-bems-boot</module>
-    <module>mys-bems-domain</module>
-    <module>mys-bems-service</module>
-    <module>mys-bems-store</module>
+    <module>daehan-frozen-boot</module>
+    <module>daehan-frozen-domain</module>
+    <module>daehan-frozen-service</module>
+    <module>daehan-frozen-store</module>
   </modules>
 </project>

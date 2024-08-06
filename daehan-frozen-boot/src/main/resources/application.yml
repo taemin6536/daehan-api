@@ -10,9 +10,10 @@ spring:
 #      jdbc-url: jdbc:mariadb://${DB_URL}/pv_ess
 #      username: ${DB_USERNAME}
 #      password: ${DB_PASSWORD}
-      jdbc-url: jdbc:mariadb://172.16.10.143:13007/pv_ess
-      username: pms
-      password: pmsPMS2018@#$
+#      jdbc-url: jdbc:mariadb://172.16.10.143:13007/pv_ess
+      jdbc-url: jdbc:mariadb://localhost:3306/
+      username: root
+      password: xoals1004!!
 ---
 spring:
   publicKeyString: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLfWTefQbvzZBauNdKhpOnXdYTYxzvG1Mq3nUHtJ6XekIzOxxqbDHVHQTqLZB3jdbpIFU+dQqMPGTHyG5/Sdn+XNMXNUW9rka4l4nqZ99Pxiev+pYvtPEIwj/ioZG5NsVrMJzc0VDzD0JrE6BN1wJeLJJX2oXn3og2hlBgfu19KQIDAQAB
@@ -33,7 +34,8 @@ logging:
   level:
     root: INFO
   base:
-    path: /home/logs
+#    path: /home/logs
+    path: /Users/taemin/taemin/nuri/bems/logs
   pattern: "%-5level %d{yy-MM-dd HH:mm:ss} [%logger{0}:%line] - %msg%n"
   file:
     name: pms
